@@ -6,6 +6,7 @@
 #include "effect.h"
 #include "psxsdk/libgpu.h"
 #include "psxsdk/inline_c.h"
+#include "effect/effect_042.h"
 
 /** @brief A posed vertex and the projected coordinates reused by its faces. */
 typedef struct {
@@ -59,9 +60,8 @@ typedef struct {
     /* 0xA6 */ s16 unk0A6;
 } ShootWarpScratch; /* 0xA8 */
 
-void func_801A065C(MATRIX *, s32);
-void func_801A07EC(MATRIX *, s32);
-void func_801A0978(MATRIX *, s32);
+static void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift,
+                        ShootWarpRender *render);
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0000);
 
@@ -287,7 +287,8 @@ INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A98AC);
  * The aligned stream tail contains textured triangles followed by quads;
  * back-facing polygons are skipped and the rest enter the depth-sorted OT.
  */
-void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift, ShootWarpRender *render) {
+static void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift,
+                        ShootWarpRender *render) {
     POLY_FT3 *ft3;
     ShootWarpVertex *vbuf;
     EffectJoint *joints;
@@ -307,7 +308,7 @@ void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift, ShootWarpRender *rend
     s = func_800B3698(sizeof(ShootWarpScratch));
 
     s->warpWeight = render->blend;
-    s->keepWeight = 0x1000 - s->warpWeight;
+    s->keepWeight = ONE - s->warpWeight;
     s->origin = render->origin;
     s->radiusX = render->radiusX;
     s->radiusY = render->radiusY;
@@ -333,8 +334,12 @@ void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift, ShootWarpRender *rend
         ShootWarpVertex *vb = vbuf;
         s16 *stream = (s16 *)((u8 *)mesh->parts + *parts++);
         s16 *start = stream;
-        s32 groups, n, tris, quads;
-        s32 g, v;
+        s32 groups;
+        s32 n;
+        s32 tris;
+        s32 quads;
+        s32 g;
+        s32 v;
         MATRIX *joint;
         EffectMeshTri *tri;
         EffectMeshQuad *quad;
@@ -362,9 +367,9 @@ void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift, ShootWarpRender *rend
                 s->delta.vz -= s->origin.vz;
                 s->original = s->delta;
                 VectorNormalSS(&s->delta, &s->delta);
-                s->delta.vx = s->delta.vx * s->radiusX / 0x1000;
-                s->delta.vy = s->delta.vy * s->radiusY / 0x1000;
-                s->delta.vz = s->delta.vz * s->radiusZ / 0x1000;
+                s->delta.vx = s->delta.vx * s->radiusX / ONE;
+                s->delta.vy = s->delta.vy * s->radiusY / ONE;
+                s->delta.vz = s->delta.vz * s->radiusZ / ONE;
                 gte_lddp(s->keepWeight);
                 gte_ldsv(&s->original);
                 gte_gpf1();
@@ -428,7 +433,7 @@ void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift, ShootWarpRender *rend
                 *(u16 *)&ft->u2 = tri->uv2;
                 *(u32 *)&ft->r0 = s->triColour;
                 if (tri->tpage & EFFECT_MESH_TPAGE_ABE) {
-                    ft->code |= 2;
+                    setSemiTrans(ft, 1);
                 }
                 s->otz = (vb[s->idx0].depth + vb[s->idx1].depth +
                           vb[s->idx2].depth) / 3 >> otShift;
@@ -464,7 +469,7 @@ void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift, ShootWarpRender *rend
                 *(u16 *)&ft4->u3 = quad->uv3;
                 *(u32 *)&ft4->r0 = s->quadColour;
                 if (quad->tpage & EFFECT_MESH_TPAGE_ABE) {
-                    ft4->code |= 2;
+                    setSemiTrans(ft4, 1);
                 }
                 s->otz = (vb[s->idx0].depth + vb[s->idx1].depth +
                           vb[s->idx2].depth + vb[s->idx3].depth) >> (otShift + 2);
