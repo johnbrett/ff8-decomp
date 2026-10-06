@@ -441,7 +441,7 @@ s32 func_800A6C34(void) {
     var_s0 += func_800A6B6C(2, -20);
     var_s0 += func_8009B15C();
     
-    if (g_battleChars.levelEntries[15].abilityFlags & 1) {
+    if (g_battleChars.abilityFlags & 1) {
         var_s0 -= 20;
     }
     
@@ -453,7 +453,7 @@ s32 func_800A6C34(void) {
         }
     }
     
-    if ((g_battleChars.levelEntries[15].abilityFlags & 1) && (var_s1 == 2)) {
+    if ((g_battleChars.abilityFlags & 1) && (var_s1 == 2)) {
         var_s1 = 1;
     }
     
@@ -901,7 +901,7 @@ void func_800A77E8(void) {
     u8 idx;
     
     for (i = 0; i < 3; i++) {
-        idx = g_gameState.mainData.party.party[i]; // uses party.party as the index for chars
+        idx = g_gameState.mainData.party.partyMembers[i];
         if (idx != 255) { // not party member 3
             for (j = 0; j < 32; j++) {
                 func_800A779C(g_gameState.chars[idx].magic[j].magicId);
@@ -919,11 +919,11 @@ void func_800A7884(void) {
     }
 
     func_800A77E8();
-    g_battleChars.levelEntries[15].abilityFlags = 0;
+    g_battleChars.abilityFlags = 0;
 
     for (i = 0; i < 3; i++) {
-        func_80022E08(g_gameState.mainData.party.party[i], i);
-        func_800231E0(g_gameState.mainData.party.party[i], i);
+        func_80022E08(g_gameState.mainData.party.partyMembers[i], i);
+        func_800231E0(g_gameState.mainData.party.partyMembers[i], i);
         func_800A7518(i);
         func_800A71C0(i);
     }
@@ -938,7 +938,7 @@ void func_800A7934(void) {
         GameState* gs = &g_gameState;
         if (D_800ED148.entities[i].comFileId != 255) {
             CharacterData* character = gs->chars;
-            character[g_gameState.mainData.party.party[i]].currentHp = D_800ED148.entities[i].currentHp;
+            character[g_gameState.mainData.party.partyMembers[i]].currentHp = D_800ED148.entities[i].currentHp;
         }
     }
 }
@@ -958,7 +958,7 @@ void func_800A79A0(void) {
     }
 
     for (i = 0; i < 3; i++) {
-        func_800231E0(g_gameState.mainData.party.party[i], i);
+        func_800231E0(g_gameState.mainData.party.partyMembers[i], i);
         func_800A71C0(i);
     }
 }
@@ -1905,7 +1905,7 @@ void func_800A94E0(void) {
 
 
     for (i = 0; i < 8; i++) {
-        g_battleChars.gfEntries[0].unk0[i] = 255;
+        g_battleChars.unk610[i] = 255;
     }
 }
 
