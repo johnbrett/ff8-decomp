@@ -1499,13 +1499,17 @@ binaries:
     target_path: original/effect/effect_042.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_042.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_042
     type: code
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_042]
+    - [0x0, c, effect_042_entry]
+    - [0x208, c, lib/common]
+    - [0x978, c, lib/rotz]
+    - [0xB04, c, effect_042]
     - [0xE498, .rodata, effect_042]
     - [0xE4AC, bin, effect_042]
   - [0x3C5A0]

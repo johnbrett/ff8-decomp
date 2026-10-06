@@ -7,6 +7,8 @@
 #include "psxsdk/libgpu.h"
 #include "psxsdk/inline_c.h"
 #include "effect/effect_042.h"
+#include "effect/lib/common.h"
+#include "effect/lib/rotz.h"
 
 /** @brief A posed vertex and the projected coordinates reused by its faces. */
 typedef struct {
@@ -36,7 +38,9 @@ typedef struct {
     /* 0x9C */ SVECTOR angles;
     /* 0xA4 */ u8 pad0A4[0xC8 - 0xA4];
     /* 0xC8 */ u16 blend;
-    /* 0xCA */ s16 radiusX, radiusY, radiusZ;
+    /* 0xCA */ s16 radiusX;
+    /* 0xCC */ s16 radiusY;
+    /* 0xCE */ s16 radiusZ;
 } ShootWarpRender;
 
 /** @brief Battle scratchpad record, with the offsets used by the mesh stream. */
@@ -52,39 +56,23 @@ typedef struct {
     /* 0x64 */ u8 pad064[0x78 - 0x64];
     /* 0x78 */ s32 otz;
     /* 0x7C */ s32 nclip;
-    /* 0x80 */ s32 idx0, idx1, idx2, idx3;
-    /* 0x90 */ u32 triColour, quadColour;
+    /* 0x80 */ s32 idx0;
+    /* 0x84 */ s32 idx1;
+    /* 0x88 */ s32 idx2;
+    /* 0x8C */ s32 idx3;
+    /* 0x90 */ u32 triColour;
+    /* 0x94 */ u32 quadColour;
     /* 0x98 */ u32 visible;
-    /* 0x9C */ u16 keepWeight, warpWeight;
-    /* 0xA0 */ s16 radiusX, radiusY, radiusZ;
+    /* 0x9C */ u16 keepWeight;
+    /* 0x9E */ u16 warpWeight;
+    /* 0xA0 */ s16 radiusX;
+    /* 0xA2 */ s16 radiusY;
+    /* 0xA4 */ s16 radiusZ;
     /* 0xA6 */ s16 unk0A6;
 } ShootWarpScratch; /* 0xA8 */
 
 static void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift,
                         ShootWarpRender *render);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0000);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0208);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0358);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0404);
-
-void func_801A0424(void) {
-}
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A042C);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0528);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0624);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A065C);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A07EC);
-
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0978);
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0B04);
 
@@ -277,16 +265,6 @@ INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A97F0);
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A98AC);
 
-/**
- * @brief Pose and radially deform Shoot's mesh, then emit its textured faces.
- *
- * Each visible part first poses its vertex groups through their joints. The
- * position relative to the deformation origin is blended with a normalized,
- * axis-scaled direction, then rotated back about that origin. A second pass
- * projects the resulting positions so shared vertices are transformed once.
- * The aligned stream tail contains textured triangles followed by quads;
- * back-facing polygons are skipped and the rest enter the depth-sorted OT.
- */
 static void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift,
                         ShootWarpRender *render) {
     POLY_FT3 *ft3;
@@ -319,13 +297,13 @@ static void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift,
     s->triColour |= EFFECT_PRIM_CODE(0x24);
     s->rotation = render->rotation;
     if (render->angles.vx != 0) {
-        func_801A065C(&s->rotation, render->angles.vx);
+        effectMatrixRotX(&s->rotation, render->angles.vx);
     }
     if (render->angles.vz != 0) {
-        func_801A0978(&s->rotation, render->angles.vz);
+        effectMatrixRotZ(&s->rotation, render->angles.vz);
     }
     if (render->angles.vy != 0) {
-        func_801A07EC(&s->rotation, render->angles.vy);
+        effectMatrixRotY(&s->rotation, render->angles.vy);
     }
     gte_SetColorMatrix(&s->rotation);
     gte_SetRotMatrix(&render->view);

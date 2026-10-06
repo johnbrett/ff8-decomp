@@ -1,0 +1,16 @@
+effectTextInit = 0x801A0208; // type:func
+effectTextHex = 0x801A0358; // type:func
+effectTextNewline = 0x801A0404; // type:func
+effectNop = 0x801A0424; // type:func
+effectDrawQuad128 = 0x801A042C; // type:func
+effectDrawQuad256 = 0x801A0528; // type:func
+effectMatrixIdentity = 0x801A0624; // type:func
+effectMatrixRotX = 0x801A065C; // type:func
+effectMatrixRotY = 0x801A07EC; // type:func
+effectMatrixRotZ = 0x801A0978; // type:func
+
+g_effectPrimCursor = 0x801DCDD0;
+g_effectHexGlyphs = 0x801E9BA0;
+g_effectTextX = 0x801E9BB4;
+g_effectTextY = 0x801E9BB8;
+g_effectTextColour = 0x801E9BBC;
