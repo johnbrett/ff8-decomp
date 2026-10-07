@@ -3,6 +3,27 @@
  * @brief Shoot
  */
 #include "common.h"
+#include "effect.h"
+#include "psxsdk/inline_c.h"
+#include "effect/effect_042.h"
+
+#define SHOOT_SLOT_DRAW_MODE 16
+#define SHOOT_MESH_DEPTH_SHIFT 4
+
+typedef struct {
+    /* 0x00 */ u8 pad000[0x20];
+    /* 0x20 */ MATRIX pose;
+    /* 0x40 */ MATRIX view;
+    /* 0x60 */ u8 pad060[0x6C - 0x60];
+    /* 0x6C */ s32 *prims; /* Battle stores the packet cursor as a word. */
+    /* 0x70 */ u8 pad070[0xD0 - 0x70];
+    /* 0xD0 */ s16 slotIndex;
+} ShootWarpRender;
+
+/* INCLUDE_ASM provides a global assembly symbol, not a C static definition. */
+void func_801A990C(EffectMesh *mesh, u32 *ot, s32 otShift, ShootWarpRender *render);
+
+static void func_801AA420(ShootWarpRender *render);
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A0000);
 
@@ -220,7 +241,24 @@ INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A98AC);
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801A990C);
 
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801AA420);
+/** @brief Pose and draw the battle slot's warped mesh and optional attachment. */
+static void func_801AA420(ShootWarpRender *render) {
+    BattleEffectSlot *slot = &D_800EF2D0[render->slotIndex];
+
+    render->pose = slot->mtx;
+    func_800BC420(slot->unk060);
+    gte_MulMatrix0(&D_800F02C8, &render->pose, &render->view);
+    gte_SetTransMatrix(&D_800F02C8);
+    gte_ldlv0(render->pose.t);
+    gte_mvmva(1, 0, 0, 0, 0);
+    gte_stlvnl(render->view.t);
+    *render->prims = func_800BC060(slot, D_800FA5E8->unk4040, SHOOT_SLOT_DRAW_MODE, *render->prims);
+    func_801A990C(slot->mesh, D_800FA5E8->ot, SHOOT_MESH_DEPTH_SHIFT, render);
+    if (slot->unk078 != NULL) {
+        func_801A990C(slot->unk078->mesh, D_800FA5E8->ot, SHOOT_MESH_DEPTH_SHIFT, render);
+    }
+    func_800BC420(slot->unk060);
+}
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042", func_801AA68C);
 
