@@ -412,7 +412,7 @@ void func_800C4A74(void) {
  * @param stepDelta  Step delta to add to all accumulators this tick.
  *
  * @verbatim
- * void func_800C4AE4(s32 stepDelta) {
+ * void TickStepCounters(s32 stepDelta) {
  *     g_fieldVars->hpRegenStepAcc += stepDelta;
  *     g_fieldVars->stepCounter += stepDelta;
  *     g_fieldVars->angeloLearnStepAcc += stepDelta;
@@ -449,4 +449,4 @@ void func_800C4A74(void) {
  * }
  * @endverbatim
  */
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object13", func_800C4AE4);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object13", TickStepCounters);

@@ -1,7 +1,44 @@
 #include "common.h"
 #include "world.h"
 #include "world/we_object6.h"
+#include "world/we_object1.h"
+#include "world/we_object2.h"
+#include "world/we_object5.h"
+#include "world/we_object7.h"
+#include "world/we_object9.h"
+#include "world/we_object10.h"
 #include "psxsdk/libc.h"
+#include "psxsdk/libetc.h"
+#include "psxsdk/libgte.h"
+
+typedef struct {
+    /* 0x00 */ s16 x;
+    /* 0x02 */ s16 y;
+    /* 0x04 */ s16 z;
+    /* 0x06 */ u16 flags;
+} ProjVert;
+
+typedef struct {
+    /* 0x00 */ u8 data[12];
+} WorldModelTri;
+
+typedef struct {
+    /* 0x00 */ u8 data[16];
+} WorldModelQuad;
+
+// Followed by nQuads WorldModelQuad records and then nVerts SVECTORs.
+typedef struct {
+    /* 0x00 */ s16 nTris;
+    /* 0x02 */ s16 nQuads;
+    /* 0x04 */ s16 pad04;
+    /* 0x06 */ u16 nVerts;
+    /* 0x08 */ WorldModelTri tris[1];
+} WorldModel;
+
+// Private prototypes
+s32 func_800B1174(WorldModel *model, ProjVert *verts, s32 a, s32 b);
+s32 func_800B13B8(WorldModel *model, ProjVert *verts, s32 a, s32 b);
+s32 func_800B28C8(s32 kind, SVECTOR *pts, s16 a, s16 b, SlotEntry *slot, s32 mode, s32 e, s32 f);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800ACC68);
 
@@ -53,7 +90,7 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800AD698);
  * @brief Walk the placement script and emit slot entries for FF13/FF14 ops.
  *
  * Reads the script returned by @c func_800AF004 (base @c D_800D2288) and
- * dispatches each FF13/FF14 placement opcode to @c func_800BD82C, building
+ * dispatches each FF13/FF14 placement opcode to @c RegisterSceneObject, building
  * the rotation/translation pair from one of:
  *   - @c ctx track A (low byte 0x01)
  *   - @c ctx track B (low byte 0x40 / 0x41)
@@ -65,7 +102,7 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800AD698);
  * @param ctx   Slot context holding two transform tracks at +0x18 and +0x24.
  * @return 1 if at least one slot was emitted, 0 otherwise.
  */
-s32 func_800ADE24(u8 *actor, SlotEntry *slot, Slot *ctx) {
+s32 func_800ADE24(WorldObjList *actor, SlotEntry *slot, Slot *ctx) {
     SVECTOR rot;
     s32 didWork;
     VECTOR trans;
@@ -93,27 +130,27 @@ s32 func_800ADE24(u8 *actor, SlotEntry *slot, Slot *ctx) {
                 if (lowByte == 1) {
                     rot.vz = 0;
                     rot.vx = 0;
-                    rot.vy = ctx->tracks[0].rot_y;
-                    trans.vx = ctx->tracks[0].trans_x;
-                    trans.vy = ctx->tracks[0].trans_y;
-                    trans.vz = -ctx->tracks[0].trans_z;
-                    func_800BD82C(actor, slot, 1, 0, &rot, &trans);
+                    rot.vy = ctx->tracks[2].rot_y;
+                    trans.vx = ctx->tracks[2].trans_x;
+                    trans.vy = ctx->tracks[2].trans_y;
+                    trans.vz = -ctx->tracks[2].trans_z;
+                    RegisterSceneObject(actor, slot, 1, 0, &rot, &trans);
                 } else if (lowByte == 0x40) {
                     rot.vz = 0;
                     rot.vx = 0;
-                    rot.vy = ctx->tracks[1].rot_y;
-                    trans.vx = ctx->tracks[1].trans_x;
-                    trans.vy = ctx->tracks[1].trans_y;
-                    trans.vz = -ctx->tracks[1].trans_z;
-                    func_800BD82C(actor, slot, 0x40, 0, &rot, &trans);
+                    rot.vy = ctx->tracks[3].rot_y;
+                    trans.vx = ctx->tracks[3].trans_x;
+                    trans.vy = ctx->tracks[3].trans_y;
+                    trans.vz = -ctx->tracks[3].trans_z;
+                    RegisterSceneObject(actor, slot, 0x40, 0, &rot, &trans);
                 } else if (lowByte == 0x41) {
                     rot.vz = 0;
                     rot.vx = 0;
-                    rot.vy = ctx->tracks[1].rot_y;
-                    trans.vx = ctx->tracks[1].trans_x;
-                    trans.vy = ctx->tracks[1].trans_y;
-                    trans.vz = -ctx->tracks[1].trans_z;
-                    func_800BD82C(actor, slot, 0x41, 2, &rot, &trans);
+                    rot.vy = ctx->tracks[3].rot_y;
+                    trans.vx = ctx->tracks[3].trans_x;
+                    trans.vy = ctx->tracks[3].trans_y;
+                    trans.vz = -ctx->tracks[3].trans_z;
+                    RegisterSceneObject(actor, slot, 0x41, 2, &rot, &trans);
                 } else if ((s8)highByte >= 0) {
                     s32 rz;
                     trans = *(VECTOR *)&D_800D2128[(s8)highByte];
@@ -121,12 +158,12 @@ s32 func_800ADE24(u8 *actor, SlotEntry *slot, Slot *ctx) {
                     rz = D_800D2128[(s8)highByte].rot_z;
                     rot.vz = rz;
                     rot.vx = 0;
-                    func_800BD82C(actor, slot, lowByte, (lowByte == 0x50) ? 4 : 0, &rot, &trans);
+                    RegisterSceneObject(actor, slot, lowByte, (lowByte == 0x50) ? 4 : 0, &rot, &trans);
                 } else {
                     rot.vz = 0;
                     rot.vy = 0;
                     rot.vx = 0;
-                    func_800BD82C(actor, slot, lowByte, 0, &rot, NULL);
+                    RegisterSceneObject(actor, slot, lowByte, 0, &rot, NULL);
                 }
 
                 slot++;
@@ -143,7 +180,7 @@ s32 func_800ADE24(u8 *actor, SlotEntry *slot, Slot *ctx) {
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800AE0C8);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800AE31C);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", InitActors);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800AE518);
 
@@ -239,19 +276,19 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B01A0);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B04CC);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B0EAC);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", DrawBankModel);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B1174);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B13B8);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B164C);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", InitPlayerPosition);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B18B8);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", SyncSlotsToCamera);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B1BCC);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B1FD0);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", PlacePlayerAtSpawn);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B20E4);
 
@@ -261,6 +298,6 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B28C8);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B2B6C);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B2D94);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", SlotOutlineOverlaps);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800B2F5C);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", OutlineOverlaps);

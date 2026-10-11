@@ -2,6 +2,7 @@
 #include "world.h"
 #include "world/we_object5.h"
 #include "world/we_object6.h"
+#include "world/we_object7.h"
 #include "world/we_object3.h"
 #include "battle.h"
 #include "psxsdk/libgpu.h"
@@ -554,7 +555,7 @@ s32 func_800AC3EC(s32 idx, s32 divisor, s32 use_alt) {
  *
  * Two paths:
  *  - @b Chained (@p mode == 0 and @c D_800C9878 set): defers to
- *    @c func_800B5C60 to build the matrix/angles for the linked actor
+ *    @c UpdateKeyframeCamera to build the matrix/angles for the linked actor
  *    (record @c &D_800DD6A8[opParam==4 ? 1 : 0]), bumps the chain counter
  *    @c D_800C987C, and re-seeds the live camera position from @c D_800DD658.
  *  - @b Free-look (otherwise): critically damps the live camera position
@@ -591,8 +592,8 @@ void func_800AC468(void *unused_a0, WorldViewXform *oa, WorldViewXform *mh, s32 
     s32      delta;
 
     if (mode == 0 && D_800C9878 != 0) {
-        func_800B5C60(D_800C9878, D_800C987C, &mh->matrix, &oa->angles,
-                      D_800C97F8, (u8 *)&D_800D2390,
+        UpdateKeyframeCamera(D_800C9878, D_800C987C, &mh->matrix, &oa->angles,
+                      D_800C97F8, &D_800D2390.head,
                       ((WorldFlags *)D_800D23D8)->opParam == 4 ? &D_800DD6A8[1]
                                                               : &D_800DD6A8[0]);
         D_800C987C++;

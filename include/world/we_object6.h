@@ -9,15 +9,17 @@ extern void func_800ACC68(MATRIX *outMat, SVECTOR *angles, SVECTOR *rotBuf,
                           SVECTOR *offset);
 
 extern void func_800AD698(SceneState *st, u8 *flags);
-extern void func_800AE31C(u8 *flags);
+extern void InitActors(u8 *flags);
 extern s32  func_800AE518(u8 *flags);
+extern void func_800AEB58(ActorPart *part, ActorRecord *actor);
 extern void func_800AEEB0(u8 *flags, void *a, void *b, void *c);
-extern void func_800B04CC(SVECTOR *ang, MATRIX *m, u8 *flags, s32 v);
-extern void func_800B164C(SceneState *st, Slot *slot, u8 *flags, VECTOR *pos);
-extern void func_800B18B8(u8 *flags, VECTOR *pos, SVECTOR *ang);
+extern void func_800B04CC(SVECTOR *ang, MATRIX *m, u8 *flags, s32 *modelBank);
+extern void InitPlayerPosition(SceneState *st, Slot *slot, u8 *flags, VECTOR *pos);
+extern void SyncSlotsToCamera(u8 *flags, VECTOR *pos, SVECTOR *ang);
 extern s32  func_800B1BCC(u8 *p);
 
 extern s32 func_800B0010(u32 kind);
+extern s32 func_800B00D8(u32 kind);
 
 extern void func_800ACD38(MATRIX *outMat);
 
@@ -32,5 +34,35 @@ extern void func_800ACDC4(GlyphHeader *p, BattleSceneCtx *ctx, WorldPrimBank *po
 extern ScriptOp *func_800AF004(u8 *base, s32 flag);
 
 extern s32 func_800B21EC(WorldSpriteRec *rec, s32 mode, s32 c, s32 d);
+
+typedef struct {
+    /* 0x00 */ s32 x;
+    /* 0x04 */ s32 y;
+    /* 0x08 */ s16 z;
+} SpawnPoint;
+
+typedef struct {
+    /* 0x00 */ s32 x;
+    /* 0x04 */ s32 y;
+    /* 0x08 */ s16 z;
+    /* 0x0A */ u8 rotX;
+    /* 0x0B */ u8 rotY;
+} WorldSpawn;
+
+typedef struct {
+    /* 0x00 */ u8 pad00[0x10];
+    /* 0x10 */ SVECTOR trans;
+    /* 0x18 */ SVECTOR rot;
+} WorldHitXform;
+
+extern s32 func_800B2B6C(SlotEntry *slot, SlotEntry *target, s32 mode);
+extern s32 OutlineOverlaps(SVECTOR *quad, WorldHitXform *xf, SVECTOR *pts);
+
+extern SpawnPoint *D_800CA034;
+extern WorldSpawn *D_800D2120;
+extern VECTOR D_800C5C08; // Fixed translation of the 0x5E marker
+extern s32 D_800C5C34; // Slot index of the 0x5E marker placement
+extern u8 D_800D243F;
+extern ActorPart D_800DD6F0[]; // Part pool shared by both actor records
 
 #endif /* WORLD_WE_OBJECT6_H */

@@ -40,6 +40,8 @@ MATRIX *RotMatrixYXZ(SVECTOR *r, MATRIX *m);
 MATRIX *RotMatrixZ(s32 r, MATRIX *m);
 MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2);
 MATRIX *MulMatrix(MATRIX *m0, MATRIX *m1);
+MATRIX *MulMatrix2(MATRIX *m0, MATRIX *m1);
+MATRIX *func_80040534(MATRIX *m, VECTOR *v); // TransMatrix
 MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2);   /**< @p m2 = @p m0 * @p m1, leaving both operands alone. */
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
 MATRIX *ScaleMatrixL(MATRIX *m, VECTOR *scale);
@@ -51,6 +53,8 @@ void SetLightMatrix(MATRIX *m);
 void SetColorMatrix(MATRIX *m);
 void SetBackColor(s32 rbk, s32 gbk, s32 bbk);
 void SetFarColor(s32 rfc, s32 gfc, s32 bfc);
+void SetFogNear(s32 a, s32 h);
+void SetFogFar(s32 a, s32 h);
 
 /* --- GTE transform operations --- */
 
@@ -58,6 +62,7 @@ VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
 VECTOR *ApplyTransposeMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
 SVECTOR *ApplyMatrixSV(MATRIX *m, SVECTOR *v0, SVECTOR *v1);
 s32 RotTransPers(SVECTOR *v0, s32 *sxy, s32 *p, s32 *flag);
+void RotTrans(SVECTOR *v0, VECTOR *v1, s32 *flag);
 void LoadAverageShort12(SVECTOR *v0, SVECTOR *v1, s32 p0, s32 p1, SVECTOR *v2);
 void LoadAverageCol(u8 *v0, u8 *v1, s32 p0, s32 p1, u8 *v2);
 MATRIX *RotMatrixX(s32 r, MATRIX *m);
@@ -434,6 +439,15 @@ s32 ratan2(s32 y, s32 x);   /**< Angle of (x, y); 0x1000 = full circle. */
     "swc2   $12, 0( %0 );"                               \
     "swc2   $13, 0( %1 );"                               \
     "swc2   $14, 0( %2 )"                                \
+    :                                                    \
+    : "r"( r0 ), "r"( r1 ), "r"( r2 )                    \
+    : "memory" )
+
+/* Store SZ1/SZ2/SZ3 to three separate destinations. */
+#define gte_stsz3( r0, r1, r2 ) __asm__ volatile (       \
+    "swc2   $17, 0( %0 );"                               \
+    "swc2   $18, 0( %1 );"                               \
+    "swc2   $19, 0( %2 )"                                \
     :                                                    \
     : "r"( r0 ), "r"( r1 ), "r"( r2 )                    \
     : "memory" )

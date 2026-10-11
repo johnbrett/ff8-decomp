@@ -126,21 +126,65 @@ typedef struct {
 typedef struct {
     /* 0x00 */ VECTOR position;     /**< Slot world position (vx/vy/vz; vy compared to world camera angle). */
     /* 0x10 */ s8 marker;           /**< Scan terminator / type byte. */
-    /* 0x11 */ u8 pad11;
+    /* 0x11 */ u8 flag; // Emit flag stored by RegisterSceneObject when non-negative
     /* 0x12 */ s8 lookupIdx;        /**< Index into D_800DDB00 when >= 0. */
-    /* 0x13 */ u8 pad13;
+    /* 0x13 */ s8 unk13;
     /* 0x14 */ SVECTOR vec;         /**< First 8 bytes of the tail — vy/vz used by func_800BDxxx perturb-and-emit helpers. */
-    /* 0x1C */ u8 tail[0x0C];       /**< Remaining 12 bytes of the tail. */
+    /* 0x1C */ SVECTOR hitPos; // Ground translation for hit tests (vx/vz used by SlotOutlineOverlaps)
+    /* 0x24 */ u8 tail[0x04];
 } SlotEntry; /* 0x28 = 40 bytes */
 
-/**
- * @brief Lookup target reached via D_800DDB00[SlotEntry.lookupIdx].
- *
- * Only the @c field52 u16 is known so far.
- */
 typedef struct {
-    /* 0x00 */ u8 pad00[0x52];
+    /* 0x00 */ s32 x;
+    /* 0x04 */ s32 y;
+    /* 0x08 */ s32 z;
+    /* 0x0C */ s32 unk0C;
+} WorldRenderScale;
+
+typedef struct {
+    /* 0x00 */ u8 pad00[0x0C];
+    /* 0x0C */ u8 unk0C[0x1C]; // Returned by func_800C22B0 modes 0x1C / 0x1D
+    /* 0x28 */ u8 unk28[0x18]; // Returned by func_800C22B0 mode 0x1E
+} WorldRenderPart; /* 0x40 bytes */
+
+typedef struct {
+    /* 0x00 */ u8 header[0x40];
+    /* 0x40 */ WorldRenderPart parts[1];
+} WorldRenderData;
+
+// 2-byte aligned, so whole-block copies compile to lwl/lwr/swl/swr as in the original.
+typedef struct {
+    /* 0x00 */ u16 vx;
+    /* 0x02 */ u16 vy;
+    /* 0x04 */ u16 vz;
+    /* 0x06 */ u16 pad;
+} WorldSlotVec4; /* 0x08 */
+
+#define WORLD_SLOT_FLAG_HIDDEN 0x01 // func_800C3278 skips the slot
+#define WORLD_SLOT_FLAG_UNK08  0x08 // Cleared when vec10 or vec18 is set
+#define WORLD_SLOT_FLAG_UNK10  0x10 // Cleared when vec10 or vec18 is set
+
+typedef struct {
+    /* 0x00 */ s32 firstWord;
+    /* 0x04 */ WorldRenderData *data;
+    /* 0x08 */ u32 *unk08; // Set to unk6C + offset by func_800C2B04
+    /* 0x0C */ u16 unk0C;
+    /* 0x0E */ u16 unk0E;
+    /* 0x10 */ WorldSlotVec4 vec10; // Set or offset by func_800C0084
+    /* 0x18 */ WorldSlotVec4 vec18; // Set or offset by func_800C0154
+    /* 0x20 */ WorldRenderScale scale;
+    /* 0x30 */ u8 unk30[0x20]; // Returned by func_800C22B0 mode 0x1F
+    /* 0x50 */ u16 unk50;
     /* 0x52 */ u16 field52;
+    /* 0x54 */ u8 pad54[0x0C];
+    /* 0x60 */ u8 flags; // WORLD_SLOT_FLAG_*
+    /* 0x61 */ u8 pad61[0x07];
+    /* 0x68 */ u16 *unk68; // Halfword pairs (count, stride) walked by func_800C2B04
+    /* 0x6C */ u32 *unk6C;
+    /* 0x70 */ u8 unk70;
+    /* 0x71 */ u8 unk71;
+    /* 0x72 */ u8 pad72[0x26];
+    /* 0x98 */ s32 subBuffer;
 } LookupTarget;
 
 /**
@@ -206,10 +250,19 @@ extern s32 D_800C5D54;
  * u32 byte-offsets to the actual entry payloads.
  */
 extern u8 *D_800C976C;
+// Map display mode held in D_800C4D28. Mutually exclusive modes, not flags.
+typedef enum {
+    MAP_DISPLAY_OFF         = 0, // No map at all
+    MAP_DISPLAY_GLOBE       = 1, // Globe in the bottom right corner
+    MAP_DISPLAY_TRANSPARENT = 2, // Transparent square map in bottom right corner
+    MAP_DISPLAY_FULL        = 3  // Full screen map with hand pointer and locations etc.
+} MapDisplayMode;
+
+extern s32 D_800C4D28; // see MAP_DISPLAY_*
+extern u8 *D_800C9E74; // Actor source blocks, 2048 bytes per actor
 extern u8  D_800C5984[];
 extern u16 D_800C5C44[];
 extern s32 D_800C97A4;
-extern s32 D_800C9878;
 extern s16 D_800C987C;
 extern u8  D_800D23D8[];
 extern s32 D_800DCB48;
@@ -398,25 +451,50 @@ typedef struct {
     u8  sel69;          /**< 0x69: 2-bit selector consumed when D_800C971C != 0. */
 } Entity;
 
-/**
- * @brief Per-actor 36-byte state record indexed by actor id.
- *
- * Used by the dialogue/animation orchestrator.  Currently mapped fields:
- * @c unk02 / @c unk03 (counters), @c flag1E (-1 disables actor), and
- * @c unk1F (signed phase byte read by @c func_800B674C).
- */
 typedef struct {
-    /* 0x00 */ u8 pad00[2];
-    /* 0x02 */ s8 unk02;            /**< Signed counter / clamp value. */
-    /* 0x03 */ u8 unk03;            /**< Byte counter (range-checked against 1..2). */
-    /* 0x04 */ u8 pad04[0x1A];
-    /* 0x1E */ s8 flag1E;           /**< -1 disables actor; otherwise active. */
-    /* 0x1F */ s8 unk1F;            /**< Signed phase byte (-1, 0, 1). */
-    /* 0x20 */ u8 pad20[4];
-} ActorRecord;                       /* 0x24 bytes */
+    /* 0x00 */ VECTOR  pos;
+    /* 0x10 */ s16     x;
+    /* 0x12 */ s16     y;
+    /* 0x14 */ s16     z;
+    /* 0x16 */ u8      pad16[2];
+    /* 0x18 */ SVECTOR rot;
+    /* 0x20 */ s32     prevWord;
+    /* 0x24 */ s32     currWord;
+    /* 0x28 */ s16     prevHalf;
+    /* 0x2A */ s16     currHalf;
+    /* 0x2C */ u8      pad2C[2];
+    /* 0x2E */ s8      side;        // 1, 0 or -1
+    /* 0x2F */ u8      pad2F;
+    /* 0x30 */ s8      active;      // 1 when the part takes part in range checks
+    /* 0x31 */ u8      pad31[3];
+} ActorPart; /* 0x34 */
+
+// Copied as whole words from the actor's source block, read back as bytes.
+typedef union {
+    /* 0x00 */ u32 word;
+    /* 0x00 */ u8 ids[4];
+} ActorSlotIds;
+
+// One of the two actors in D_800DD6A8.
+typedef struct {
+    /* 0x00 */ u8 slotCount;
+    /* 0x01 */ u8 span;
+    /* 0x02 */ s8 partCount;
+    /* 0x03 */ u8 unk03;
+    /* 0x04 */ ActorSlotIds slotsA;  // consulted when flag1E != 1
+    /* 0x08 */ ActorSlotIds slotsB;  // consulted when flag1E == 1
+    /* 0x0C */ VECTOR *points;
+    /* 0x10 */ s32 unk10;
+    /* 0x14 */ s32 unk14;
+    /* 0x18 */ ActorPart *parts;
+    /* 0x1C */ s16 unk1C;
+    /* 0x1E */ s8 flag1E;            // -1 disables the actor
+    /* 0x1F */ s8 unk1F;
+    /* 0x20 */ u32 nearestDistSq;    // smallest squared camera distance over the active parts
+} ActorRecord; /* 0x24 */
 
 /**
- * @brief 32-byte node in a sorted keyframe list traversed by @c func_800B674C.
+ * @brief 32-byte node in a sorted keyframe list traversed by @c FindKeyframeNode.
  *
  * The first halfword is a time/key value with sentinels @c -1 (end of
  * list) and @c -2 (skip / continuation).  Remaining 30 bytes hold the
@@ -424,8 +502,13 @@ typedef struct {
  */
 typedef struct {
     /* 0x00 */ s16 time;
-    /* 0x02 */ u8 pad02[0x1E];
+    /* 0x02 */ u8 pad02[2];
+    /* 0x04 */ s8 blend; // 1 = lerp toward next node, 2 = hold, 3 = lerp from previous pose
+    /* 0x05 */ u8 pad05[0x1B];
 } KeyframeNode;                      /* 0x20 bytes */
+
+extern KeyframeNode *D_800C9878;
+extern s32 *D_800C973C; // world model bank: an offset table, then the models
 
 extern ActorRecord D_800DD6A8[];
 
@@ -534,14 +617,19 @@ typedef struct {
  * @c bytes pair selects per-action data via the 0xFF2E handler.
  */
 typedef struct {
-    /* 0x00 */ u8 pad00[0x18];
-    /* 0x18 */ Track tracks[2];   /**< Track A at 0x18, Track B at 0x24. */
-    /* 0x30 */ u8 pad30[0x38];
+    /* 0x00 */ Track tracks[6]; // [2] and [3] are tracks A and B; [4] and [5] are picked by D_800C971C
+    /* 0x48 */ u8 pad48[0x18];
+    /* 0x60 */ s16 unk60; // Saved D_800D239A (player heading)
+    /* 0x62 */ s8 kind[2]; // Placement kind per D_800C971C side; -1 = none
+    /* 0x64 */ u8 pad64[0x4];
     /* 0x68 */ SceneState scene;  /**< Saved scene state; the world entry loop
                                        saves the whole record here on a cold
                                        start and restores @c cmd from it on a
                                        warm one. */
-    /* 0x6C */ s32 unk6C;         /**< Flags word; see SLOT_FLAG_CMD_MIRROR. */
+    /* 0x6C */ union {
+        /* 0x00 */ s32 word;      // see SLOT_FLAG_CMD_MIRROR
+        /* 0x00 */ u8 bytes[4];   // [0] = saved D_800C4D3C, [2] = saved D_800C4D28
+    } unk6C;
     /* 0x70 */ u8 pad70[0x4];
     /* 0x74 */ u32 flags[2];      /**< 64-bit flag set (low/high). */
     /* 0x7C */ u8 bytes[2];       /**< Action bytes selectable by 0xFF2E. */
@@ -580,22 +668,16 @@ extern BattleSceneCtx D_800CA040;       /**< Worldmap "no-battle" sentinel — a
 extern s16         D_800C53B8[];        /**< Bone-id table (used by we_object4). */
 extern s32 func_800AF28C(ScriptOp *p);
 extern s32 func_800BEFC4(void);
-extern void func_800BD82C(u8 *actor, SlotEntry *slot, s32 marker, s32 flag, SVECTOR *rot, VECTOR *trans);
+#define OBJ_SLOT_COUNT 0x40 /* id slots scanned */
+#define FIRST_OBJ_ID   0x40 /* ids below this get a render slot; func_800BE7FC skips them */
+#define OBJ_LIST_END   0xFF /* terminator id */
 
-/**
- * @brief Pair of rotation source vectors at known offsets. Pointed to by
- *        @c D_800DD6C0 / @c D_800DD6E4. The leading @c 0x34 bytes and the
- *        gap between the two vectors are not yet modeled.
- */
+/** Object-id list: a 6-byte header followed by a 0xFF-terminated id array. */
 typedef struct {
-    /* 0x00 */ u8     unk00[0x34];
-    /* 0x34 */ VECTOR vecA;
-    /* 0x44 */ u8     unk44[0x24];
-    /* 0x68 */ VECTOR vecB;
-} RotationSources;
+    /* 0x00 */ u8 header[6];           // Purpose not yet identified
+    /* 0x06 */ u8 ids[OBJ_SLOT_COUNT]; // Object ids present in this list
+} WorldObjList; /* 0x46 */
 
-extern RotationSources *D_800DD6C0;
-extern RotationSources *D_800DD6E4;
 
 /**
  * @brief Two back-to-back offset arrays at the start of the string-table blob

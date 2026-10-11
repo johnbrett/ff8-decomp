@@ -122,7 +122,7 @@ s32 func_800BD7E4(s32 charIdx) {
     return 0;
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BD82C);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", RegisterSceneObject);
 
 /**
  * @brief Copy 10 flag bytes from D_800780D8 to destination struct.
@@ -425,7 +425,6 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BDEF4);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE040);
 
-
 /**
  * @brief Fetch the @c field52 halfword of the lookup target for slot @p idx.
  *
@@ -489,7 +488,7 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE3D0);
  * @param t Interpolation factor (s16, fixed-point 12-bit).
  * @param out Output vector (3 x s32). If NULL, no operation.
  */
-void func_800BE4D8(s32 *a, s32 *b, s32 t, s32 *out) {
+void func_800BE4D8(VECTOR *a, VECTOR *b, s32 t, VECTOR *out) {
     s32 diff;
     s32 val;
     s16 frac;
@@ -498,25 +497,25 @@ void func_800BE4D8(s32 *a, s32 *b, s32 t, s32 *out) {
         return;
     }
 
-    diff = a[0] - b[0];
+    diff = a->vx - b->vx;
     frac = t;
     val = diff * frac;
     if (val < 0) {
         val += 0xFFF;
     }
-    out[0] = b[0] + (val >> 12);
+    out->vx = b->vx + (val >> 12);
 
-    val = (a[1] - b[1]) * frac;
+    val = (a->vy - b->vy) * frac;
     if (val < 0) {
         val += 0xFFF;
     }
-    out[1] = b[1] + (val >> 12);
+    out->vy = b->vy + (val >> 12);
 
-    val = (a[2] - b[2]) * frac;
+    val = (a->vz - b->vz) * frac;
     if (val < 0) {
         val += 0xFFF;
     }
-    out[2] = b[2] + (val >> 12);
+    out->vz = b->vz + (val >> 12);
 }
 
 
@@ -556,15 +555,15 @@ void func_800BE578(SVECTOR *dir, SVECTOR *out) {
  * @param rec Pointer into the Record table.
  * @return Adjusted continuation value, or -2 if terminator was hit.
  */
-s32 func_800BE5F8(Record *rec) {
+s32 func_800BE5F8(KeyframeNode *rec) {
     s16 val;
-    while (rec->marker != -1 && rec->marker != -2) {
+    while (rec->time != -1 && rec->time != -2) {
         rec++;
     }
-    val = rec->marker;
+    val = rec->time;
     if (val == -2) {
         rec++;
-        return rec->marker - 1;
+        return rec->time - 1;
     }
     return -2;
 }
@@ -600,33 +599,31 @@ s32 func_800BE63C(s32 reset) {
  * @brief Snapshot each entry's @c curr fields into @c prev and invoke
  *        the per-entry handler.
  *
- * Walks @p group->entries for @c group->count iterations. Before
+ * Walks @p group->parts for @c group->partCount iterations. Before
  * dispatching each entry to @c func_800AEB58:
  *  - @c entry->prevHalf is loaded with @c entry->currHalf.
  *  - @c entry->prevWord is loaded with @c entry->currWord.
  *
- * @c group->count is re-read each iteration since @c func_800AEB58 may
+ * @c group->partCount is re-read each iteration since @c func_800AEB58 may
  * mutate it (the cached @c i is compared against the fresh count).
  *
  * @param group Transform-entry group container.
  */
-void func_800BE69C(XformGroup *group) {
-    XformEntry *entry = group->entries;
+void func_800BE69C(ActorRecord *group) {
+    ActorPart *entry = group->parts;
     s32 i = 0;
-    if (group->count > 0) {
+    if (group->partCount > 0) {
         do {
             i++;
             entry->prevHalf = entry->currHalf;
             entry->prevWord = entry->currWord;
             func_800AEB58(entry, group);
             entry++;
-        } while (i < group->count);
+        } while (i < group->partCount);
     }
 }
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE720);
-
-
 
 /**
  * @brief Load each unique object referenced by an object-id list.
@@ -685,9 +682,9 @@ done:;
  *        and @c worldPosToCell.
  *
  * Reads a byte from @p byteIn and uses it to choose a rotation source:
- *  - @c 1: @c &D_800DD6C0->vecA
- *  - @c 2 or @c 3: @c &D_800DD6C0->vecB
- *  - @c 4: @c &D_800DD6E4->vecB
+ *  - @c 1: actor 0, part 1
+ *  - @c 2 or @c 3: actor 0, part 2
+ *  - @c 4: actor 1, part 2
  *  - anything else: skip the rotation copy
  *
  * The selected source is fed through @c func_800BC51C(src, transform)
@@ -699,11 +696,11 @@ void func_800BE8B0(u8 *byteIn, VECTOR *transform, u8 *output) {
     u8 byte = *byteIn;
     VECTOR buf;
     if (byte == 1) {
-        func_800BC51C(&D_800DD6C0->vecA, transform);
+        func_800BC51C(&D_800DD6A8[0].parts[1].pos, transform);
     } else if (byte == 2 || byte == 3) {
-        func_800BC51C(&D_800DD6C0->vecB, transform);
+        func_800BC51C(&D_800DD6A8[0].parts[2].pos, transform);
     } else if (byte == 4) {
-        func_800BC51C(&D_800DD6E4->vecB, transform);
+        func_800BC51C(&D_800DD6A8[1].parts[2].pos, transform);
     }
     func_800BC544(transform, &buf);
     worldPosToCell(&buf, output);
@@ -906,7 +903,7 @@ s32 func_800BEC1C(s32 kind) {
     return 0;
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BEC60);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", UpdateActorCameraDistance);
 
 /**
  * @brief Search g_gameState array for an active entry with type 0xA2.

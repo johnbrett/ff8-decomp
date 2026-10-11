@@ -7,6 +7,7 @@
 #include "world/we_object3.h"
 #include "world/we_object1.h"
 #include "world/we_object6.h"
+#include "world/we_object11.h"
 
 
 
@@ -350,14 +351,14 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object9", func_800BC218);
 
 
 /**
- * @brief Thin wrapper that forwards to func_800BFFEC with no arguments.
+ * @brief Thin wrapper that forwards to ResetWorldRenderState with no arguments.
  *
  * @note Purpose uncertain — appears to be a dispatch hook into another
  *       subsystem, possibly for resetting or (re)initializing state
- *       owned by func_800BFFEC's module.
+ *       owned by ResetWorldRenderState's module.
  */
 void func_800BC44C(void) {
-    func_800BFFEC();
+    ResetWorldRenderState();
 }
 
 
@@ -991,9 +992,9 @@ s32 func_800BCF84(s32 id, s32 param) {
 }
 
 
-/** Checks if a counter has reached threshold 0xBB8. */
-s32 func_800BD040(void) {
-    return g_gameState.mainData.party.gil >= 0xBB8;
+// Checks for 3000 gil. The caller passes the price in a0, but the check is fixed.
+s32 func_800BD040(s32 price) {
+    return g_gameState.mainData.party.gil >= 3000;
 }
 
 /**
@@ -1269,32 +1270,34 @@ void func_800BD540(Entity *e) {
 
 
 /**
- * @brief Classify a @c SlotTarget against an expected @p kind.
+ * @brief Classify actor @p t against an expected @p kind.
  *
  * Returns a small result code:
  *   - -1: @p kind is 0xFF, mismatch, or out-of-zone.
- *   - For @p kind == 0: 0 when @c sb1F == 1; 1 when @c sb1E == -1 && @c sb1F == 0.
- *   - For @p kind == 1: 2 when @c sb1F == 1.
+ *   - For @p kind == 0: 0 when @c unk1F == 1; 1 when @c flag1E == -1 && @c unk1F == 0.
+ *   - For @p kind == 1: 2 when @c unk1F == 1.
  *   - Any other @p kind: -1.
  *
- * The @c byte3 "zone" byte must be 1 or 2 for any non-default return.
+ * The @c unk03 "zone" byte must be 1 or 2 for any non-default return.
  */
-s32 func_800BD640(u8 kind, SlotTarget *t) {
+s32 func_800BD640(u8 kind, ActorRecord *t) {
     s32 result = -1;
 
     if (kind == 0xFF) {
         return -1;
     }
     if (kind == 0) {
-        if ((u32)(t->byte3 - 1) < 2) {
-            if (t->sb1F == 1) {
+        if ((u32)(t->unk03 - 1) < 2) {
+            if (t->unk1F == 1) {
                 result = 0;
-            } else if (t->sb1E == -1 && t->sb1F == 0) {
-                result = 1;
+            } else if (t->flag1E == -1) {
+                if (t->unk1F == 0) {
+                    result = 1;
+                }
             }
         }
     } else if (kind == 1) {
-        if ((u32)(t->byte3 - 1) < 2 && t->sb1F == 1) {
+        if ((u32)(t->unk03 - 1) < 2 && t->unk1F == 1) {
             result = 2;
         }
     }

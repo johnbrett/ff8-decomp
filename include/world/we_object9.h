@@ -56,17 +56,6 @@ typedef struct {
     s32      entry_base_off;  /* 0x28: offset from blob base to first pool entry */
 } LookupBlob;
 
-/**
- * @brief 32-byte record with two signed sentinel bytes near its tail.
- */
-typedef struct {
-    u8  pad00[3];
-    u8  byte3;          /**< 0x03: zone byte, must be 1 or 2 for a match. */
-    u8  pad04[0x1A];
-    s8  sb1E;           /**< 0x1E: signed sentinel byte (-1 = open slot). */
-    s8  sb1F;           /**< 0x1F: signed marker byte (0, 1, ...). */
-} SlotTarget;
-
 /* File-private byte-array view of the game-state block (unsized to force
  * self-expanded global addressing for matching codegen). */
 
@@ -82,15 +71,17 @@ extern s32             D_800C971C;
 
 /* Per-scene angle bias applied to a placed sprite fan. */
 extern s32 func_800BC5E0(s32 ctx);
-extern void func_800BFFEC(void);
 extern void func_800C2C00(s32 a, s32 b, s32 c, s32 d, s32 e, U64 *f, s32 g, U64 *h);
 extern u8 *func_800BC8D8(u8 *buf, s32 magicId);
 extern u8 *func_800BC974(u8 *buf, s32 id);
 extern u8 *func_800BCE74(u8 *buf, s32 statId);
-extern s32 func_800B00D8(s32 a);
 
 extern void func_800BB150(Slot *slot);
 extern void func_800BB4E8(void);
+extern s32 func_800BD040(s32 price);
+extern s32 func_800BD058(s32 amount);
+extern void func_800BD180(void);
+extern s32 func_800BD640(u8 kind, ActorRecord *t);
 
 extern void func_800BC51C(VECTOR *src, VECTOR *dst);
 
