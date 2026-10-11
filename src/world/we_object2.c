@@ -10,6 +10,9 @@
 #include "world/we_object13.h"
 #include "btl_anim.h"
 
+// Private prototypes
+static s32 TurnTowardAngle(s16 target, s16 *current, s16 limit, s16 threshold);
+
 /**
  * @brief Walk a world-engine image script and blit each record to VRAM.
  *
@@ -665,77 +668,47 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object2", func_8009DB88);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object2", func_8009E5C8);
 
-/**
- * @brief Smooth-step a 12-bit angle (range @c [0,0x1000) = full revolution)
- *        toward @c target.
- *
- * Normalizes both @c target and @c *current into @c [0,0x1000), wraps
- * the signed delta into roughly @c [-0x800,0x801), and compares the
- * absolute delta against @c limit. If within limit, snaps @c *current
- * to @c target and returns 0 ("arrived"). Otherwise advances @c *current
- * by @c limit (or @c 2*limit if the remaining distance still exceeds
- * @c threshold) toward @c target and returns 1 ("still moving").
- *
- * @param target    desired angle (12-bit-revolution units).
- * @param current   pointer to the angle to step (s16, in/out).
- * @param limit     max single-step magnitude.
- * @param threshold large-step / small-step decision threshold.
- * @return          0 if snapped, 1 if still moving toward target.
- *
- * @note Decompiled to 99.77% in @c permuter/TurnTowardAngle/base.c with a
- *       clean structure (no double-store / hoist hacks). Reusing the
- *       consumed wrapped-target register for @c limit, and reusing the
- *       wrapped-delta register for the magnitude, pins every register but
- *       one: the sole remaining diff is the @c (s16)delta narrow, which
- *       gcc emits in place (@c sra @c $v1) where the target casts into the
- *       freed @c $a2 then copies @c $a2->$v1 for the magnitude. The net
- *       register state past the abs is identical — a pure cast-destination
- *       reg-alloc tie-break (permuter territory).
- *
- * @verbatim
- * s32 TurnTowardAngle(s16 target, s16 *current, s16 limit, s16 threshold) {
- *     s32 t = target;          // wrapped target; reused for limit once consumed
- *     s32 d = *current;        // wrapped current, then the wrapped delta
- *     s32 changed = 0;
- *
- *     while (t >= 0x1000) t -= 0x1000;
- *     while (t < 0)       t += 0x1000;
- *     while (d >= 0x1000) d -= 0x1000;
- *     while (d < 0)       d += 0x1000;
- *
- *     d = t - d;               // shortest-turn delta
- *     if (d <= -0x800) {
- *         while (d < 0)  d += 0x1000;
- *     } else if (d > 0x800) {
- *         while (d >= 0) d -= 0x1000;
- *     }
- *
- *     t = limit;               // reuse the (now-dead) wrapped-target reg for limit
- *     {
- *         s32 delta = (s16)d;  // signed delta
- *         s32 mag = delta;     // |delta|
- *         if (delta < 0) mag = -delta;
- *
- *         if (t < mag) {
- *             if (delta > 0) {
- *                 s32 c = *current;
- *                 if (threshold < mag) *current = c + t * 2;
- *                 else                 *current = c + t;
- *             } else {
- *                 s32 c = *current;
- *                 if (threshold < mag) *current = c - t * 2;
- *                 else                 *current = c - t;
- *             }
- *             changed = 1;
- *         } else {
- *             *current = target;
- *         }
- *     }
- *     return changed;
- * }
- * @endverbatim
- */
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object2", TurnTowardAngle);
+// Returns 0 once current reaches target, 1 while still turning.
+// abs() is the gcc builtin: its copy-then-negate expansion gives the original register use.
+static s32 TurnTowardAngle(s16 target, s16 *current, s16 limit, s16 threshold) {
+    s32 t = target;
+    s32 d = *current;
+    s32 changed = 0;
+
+    while (t >= 0x1000) t -= 0x1000;
+    while (t < 0)       t += 0x1000;
+    while (d >= 0x1000) d -= 0x1000;
+    while (d < 0)       d += 0x1000;
+
+    d = t - d;
+    if (d <= -0x800) {
+        while (d < 0)  d += 0x1000;
+    } else if (d > 0x800) {
+        while (d >= 0) d -= 0x1000;
+    }
+
+    t = limit;
+    {
+        s32 delta = (s16)d; // wrapped to a signed 16-bit angle
+        s32 mag = abs(delta);
+
+        if (t < mag) {
+            if (delta > 0) {
+                s32 c = *current;
+                if (threshold < mag) *current = c + t * 2;
+                else                 *current = c + t;
+            } else {
+                s32 c = *current;
+                if (threshold < mag) *current = c - t * 2;
+                else                 *current = c - t;
+            }
+            changed = 1;
+        } else {
+            *current = target;
+        }
+    }
+    return changed;
+}
 
 /* Map-id classifiers used to pick per-map targets. The three variants differ
    only in whether map 0x30 / 0x32 fall into the "common" set or are handled
