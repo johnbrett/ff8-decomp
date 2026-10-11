@@ -13,10 +13,13 @@
 #include "snd_init.h"
 
 // Private prototypes
+static KeyframeNode *FindKeyframeNode(KeyframeNode *list, s16 cached, s16 *out, ActorRecord *actor);
 void func_800B6034(VECTOR *out, KeyframeNode *node, ActorRecord *recs);
 void func_800B63C0(VECTOR *out, KeyframeNode *node, ActorRecord *recs);
 void func_800B76F8(void);
 s32 func_800B7C70(void);
+static s32 func_800B816C(void);
+static s32 func_800B8230(void);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B310C);
 
@@ -84,30 +87,407 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B3AB8);
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B3ED0);
 
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", SaveScenePlacement);
+void SaveScenePlacement(Slot *slot, u8 mode) {
+    VECTOR pos;
+    VECTOR *p;
+    SlotEntry *e;
+    s32 i;
+    u32 kind;
+    s32 idx;
+    u32 cmd;
+    s32 range;
+    u8 c;
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", RestoreScenePlacement);
+    for (i = 0; i < D_800C5B50; i++) {
+        e = &D_800DBFB8[i];
+        kind = func_800B00D8(e->marker);
+        idx = -1;
+        if (kind < 10 || kind == 0x80) {
+            idx = D_800C971C != 0;
+        } else if (kind == 0x32) {
+            idx = 2;
+        } else if (kind == 0x31) {
+            idx = D_800C971C != 0;
+        } else if (kind == 0x30) {
+            idx = 3;
+        } else if (i == D_800C5C28) {
+            idx = D_800C971C ? 5 : 4;
+        }
+        if (idx >= 0) {
+            p = &pos;
+            p->vx = e->position.vx;
+            p->vy = -e->position.vz;
+            p->vz = e->position.vy;
+            slot->tracks[idx].trans_x = pos.vx;
+            slot->tracks[idx].trans_z = pos.vy;
+            slot->tracks[idx].trans_y = pos.vz;
+            slot->tracks[idx].rot_y = e->vec.vy;
+        }
+    }
+    cmd = D_800C4D38;
+    idx = -1;
+    if (cmd < 10 || cmd == 0x80) {
+        idx = D_800C971C != 0;
+    } else if (cmd == 0x32) {
+        idx = 2;
+    } else if (cmd == 0x31) {
+        idx = D_800C971C != 0;
+    } else if (cmd == 0x30) {
+        idx = 3;
+    } else if ((cmd >= 0x20 && cmd <= 0x28) || cmd == 0x84) {
+        idx = D_800C971C ? 5 : 4;
+    }
+    if (idx >= 0) {
+        slot->tracks[idx].trans_x = D_800C9868.vx;
+        slot->tracks[idx].trans_z = D_800C9868.vy;
+        slot->tracks[idx].trans_y = D_800C9868.vz;
+        slot->tracks[idx].rot_y = D_800C9770[1].vy;
+    }
+    slot->unk60 = D_800D2390.tail.vy;
+    if ((D_800C4D38 >= 0 && D_800C4D38 < 10) || D_800C4D38 == 0x80 || (D_800C4D38 >= 0x10 && D_800C4D38 <= 0x16) || (D_800C4D38 >= 0x40 && D_800C4D38 <= 0x42) || D_800C4D38 == 0x31
+        || (D_800C4D38 >= 0x20 && D_800C4D38 <= 0x28) || D_800C4D38 == 0x84 || D_800C4D38 == 0x32 || D_800C4D38 == 0x30) {
+        slot->unk6C.bytes[0] = D_800C4D3C;
+    }
+    slot->unk6C.bytes[2] = D_800C4D28 == MAP_DISPLAY_FULL ? MAP_DISPLAY_OFF : D_800C4D28;
+    c = D_800C4D38;
+    *(u8 *)&slot->scene.unk02 = 0xFF; // stored as u8: an s8 store lets gcc reuse the -1 below
+    *(u8 *)&slot->scene.unk03 = 0xFF;
+    slot->scene.cmd = c;
+    if (mode == 1) {
+        range = D_800C4D38 >= 0x20 && D_800C4D38 <= 0x28;
+        if (range || D_800C4D38 == 0x84) {
+            if (D_800C971C != 0) {
+                if (range || D_800C4D38 == 0x84) {
+                    slot->kind[1] = -1;
+                }
+            } else {
+                if (range || D_800C4D38 == 0x84) {
+                    slot->kind[0] = -1;
+                }
+            }
+        }
+    }
+    g_gameState.unk004 = D_800D228C[func_800A5E40(D_800C9868.vx, D_800C9868.vy)];
+}
+
+void RestoreScenePlacement(Slot *spawn, u8 mode) {
+    s32 idx;
+    Track *track;
+    s32 y;
+
+    idx = -1;
+    if (D_800C971C != 0) {
+        if ((D_800C4D38 >= 0 && D_800C4D38 < 10) || D_800C4D38 == 0x80) {
+            idx = 1;
+        } else if (D_800C4D38 == 0x32) {
+            idx = 2;
+        } else if (D_800C4D38 == 0x30) {
+            idx = 3;
+        } else if ((D_800C4D38 >= 0x20 && D_800C4D38 <= 0x28) || D_800C4D38 == 0x84) {
+            idx = 5;
+        } else if (D_800C4D38 == 0x31) {
+            idx = 1;
+        }
+    } else {
+        if ((D_800C4D38 >= 0 && D_800C4D38 < 10) || D_800C4D38 == 0x80) {
+            idx = 0;
+        } else if (D_800C4D38 == 0x32) {
+            idx = 2;
+        } else if (D_800C4D38 == 0x30) {
+            idx = 3;
+        } else if ((D_800C4D38 >= 0x20 && D_800C4D38 <= 0x28) || D_800C4D38 == 0x84) {
+            idx = 4;
+        } else if (D_800C4D38 == 0x31) {
+            idx = 0;
+        }
+    }
+
+    if (idx >= 0) {
+        track = &spawn->tracks[idx];
+        D_800C9868.vx = track->trans_x;
+        D_800C9868.vy = track->trans_z;
+        y = track->trans_y;
+        D_800C9770[1].vz = 0;
+        D_800C9770[1].vx = 0;
+        D_800C9868.vz = y;
+        D_800C9770[1].vy = track->rot_y;
+        D_800D2390.tail.vy = spawn->unk60;
+    }
+
+    if ((D_800C4D38 >= 0 && D_800C4D38 < 10) || D_800C4D38 == 0x80 ||
+        (D_800C4D38 >= 0x10 && D_800C4D38 <= 0x16) || (D_800C4D38 >= 0x40 && D_800C4D38 <= 0x42) ||
+        D_800C4D38 == 0x31 || (D_800C4D38 >= 0x20 && D_800C4D38 <= 0x28) ||
+        D_800C4D38 == 0x84 || D_800C4D38 == 0x32 || D_800C4D38 == 0x30) {
+        D_800C4D3C = spawn->unk6C.bytes[0];
+    } else {
+        D_800C4D3C = 0;
+    }
+    D_800C4D28 = spawn->unk6C.bytes[2];
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B454C);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B4AA0);
 
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B56A0);
+void func_800B56A0(void) {
+    func_800BD180();
+    if (D_800D23D8[0] == 5) {
+        if (func_800B7C70() == 0) {
+            return;
+        }
+        D_800C4D38 = D_800DCAF8;
+        func_800A40C0();
+        D_800C4D3C = D_800D226C->unk6C.bytes[0];
+        D_800C9868.vx = D_800DCAE8.vx;
+        D_800C9868.vy = -D_800DCAE8.vz;
+        D_800C9868.vz = D_800DCAE8.vy;
+        worldPosToCell(&D_800DCAE8, D_800C9770);
+        SyncSlotsToCamera(D_800D23D8, &D_800C9868, D_800C9770);
+    } else if (D_800D23D8[0] == 6) {
+        func_800B76F8();
+        return;
+    } else if (D_800D23D8[0] == 7) {
+        if (func_800B816C() == 0) {
+            return;
+        }
+        D_800C4D38 = D_800DCAF8;
+        func_800A40C0();
+        D_800C9868.vx = D_800DCAE8.vx;
+        D_800C9868.vy = -D_800DCAE8.vz;
+        D_800C9868.vz = D_800DCAE8.vy;
+        worldPosToCell(&D_800DCAE8, D_800C9770);
+        SyncSlotsToCamera(D_800D23D8, &D_800C9868, D_800C9770);
+    } else if (D_800D23D8[0] == 8) {
+        if (func_800B8230() == 0) {
+            return;
+        }
+        D_800C4D38 = D_800DCAF8;
+        if (D_800C4D38 == 0x32) {
+            D_800C4D2C = 0x80000000;
+            D_800C9770[1] = D_800DBFB8[D_800C5C24].vec;
+            D_800D23D8[0] = 6;
+            D_800C4D88 = pickAudioTransition(0x32, D_800D23D8[0x6A]);
+            if (D_800C4D88 >= 0) {
+                sndCmdC1(0, 0x1E, 0);
+            }
+        } else if ((D_800C4D38 >= 0x20 && D_800C4D38 <= 0x28) || D_800C4D38 == 0x84) {
+            D_800C4D44 = 0x20;
+            D_800C9770[1] = D_800DBFB8[D_800C5C28].vec;
+        }
+        D_800C4D3C = 0;
+        func_800A40C0();
+        D_800C9868.vx = D_800DCAE8.vx;
+        D_800C9868.vy = -D_800DCAE8.vz;
+        D_800C9868.vz = D_800DCAE8.vy;
+        worldPosToCell(&D_800DCAE8, D_800C9770);
+        SyncSlotsToCamera(D_800D23D8, &D_800C9868, D_800C9770);
+    } else {
+        func_8009F6EC();
+        return;
+    }
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B5974);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", GetFootprintCorners);
+// Returns the layout kind (1-4), or 0 for an unknown kind. Every known kind writes
+// all four corners of out.
+s32 GetFootprintCorners(s32 id, SVECTOR *out, u16 *param, s32 margin) {
+    u16 *e;
+    s32 layout;
+    s32 kind;
+    s16 x;
+    s16 y;
+    s16 x2;
+
+    // Entry (id - 0x40); written this way because (id - 0x40) * 4 does not match.
+    if (id >= 0x40) {
+        e = &D_800C5C44[id * 4 - 0x100];
+    } else if (id == 1) {
+        e = &D_800C5C44[0x80]; // entry 0x20, the first fixed entry
+    } else {
+        e = &D_800C5C44[0x84]; // entry 0x21
+    }
+
+    // The table is u16, but the kind and the halved sizes are read signed.
+    kind = (s16)e[3];
+    if (kind == 1) {
+        layout = 1;
+        x = ((s16)e[0] >> 1) + margin;
+        y = ((s16)e[1] >> 1) + margin;
+        out[0].vx = out[3].vx = -x;
+        out[1].vx = out[2].vx = x;
+        out[0].vz = out[1].vz = y;
+        out[2].vz = out[3].vz = -y;
+    } else if (kind == 2) {
+        layout = 2;
+        x = e[0] + margin;
+        y = ((s16)e[1] >> 1) + margin;
+        out[0].vx = out[3].vx = -x;
+        out[1].vx = out[2].vx = -margin;
+        out[0].vz = out[1].vz = y;
+        out[2].vz = out[3].vz = -y;
+    } else if (kind == 3) {
+        layout = 3;
+        x = (s16)e[0] >> 1;
+        x2 = margin + (x >> 1);
+        x += margin;
+        y = ((s16)e[1] >> 1) + margin;
+        out[0].vx = -x2;
+        out[3].vx = x2;
+        out[1].vx = -x;
+        out[2].vx = x;
+        out[0].vz = out[3].vz = -y;
+        out[1].vz = out[2].vz = y;
+    } else if (kind == 4) {
+        layout = 4;
+        x = ((s16)e[0] >> 1) + margin;
+        y = ((s16)e[1] >> 1) + margin;
+        out[0].vx = out[3].vx = -x;
+        out[1].vx = out[2].vx = x;
+        out[0].vz = out[1].vz = y;
+        out[2].vz = out[3].vz = -y;
+    } else {
+        return 0;
+    }
+    out[0].vy = out[1].vy = out[2].vy = out[3].vy = 0;
+    if (param != NULL) {
+        *param = e[2];
+    }
+    return layout;
+}
 
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", UpdateKeyframeCamera);
+void UpdateKeyframeCamera(KeyframeNode *list, s16 count, MATRIX *outMat, SVECTOR *outAngles,
+                   SVECTOR *rotBuf, SVECTOR *offsetOut, ActorRecord *recs) {
+    VECTOR cur;
+    MATRIX m;
+    SVECTOR angles;
+    SVECTOR offset;
+    SVECTOR rot;
+    VECTOR next;
+    s16 frac;
+    KeyframeNode *node;
+    s32 yaw;
+
+    node = FindKeyframeNode(list, count, &frac, recs);
+    if (count == 0 || D_800C5D58 != node) {
+        func_800ACA70(&D_800DCB28, outMat);
+        func_800ACBD0(&D_800DCB38, rotBuf);
+        if (count == 0) {
+            D_800DCB08 = D_800DCB28;
+            D_800DCB18 = D_800DCB38;
+        }
+    }
+    yaw = func_800A5DC8(D_800C9868.vx, D_800C9868.vy);
+
+    func_800B6034(&cur, node, recs);
+    if (node->blend == 1) {
+        func_800B6034(&next, node + 1, recs);
+        func_800BE4D8(&next, &cur, frac, &D_800DD670);
+    } else if (node->blend == 2) {
+        D_800DD670 = cur;
+    } else if (node->blend == 3) {
+        func_800BE4D8(&cur, &D_800DCB28, frac, &D_800DD670);
+    }
+
+    func_800B63C0(&cur, node, recs);
+    if (node->blend == 1) {
+        func_800B63C0(&next, node + 1, recs);
+        func_800BE4D8(&next, &cur, frac, &D_800DD658);
+    } else if (node->blend == 2) {
+        D_800DD658 = cur;
+    } else if (node->blend == 3) {
+        func_800BE4D8(&cur, &D_800DCB38, frac, &D_800DD658);
+    }
+
+    func_800AC778(&D_800DD670, &D_800DD658, yaw, &m, &angles, &offset, &rot);
+    if (outMat != NULL) {
+        *outMat = m;
+    }
+    if (outAngles != NULL) {
+        *outAngles = angles;
+    }
+    if (offsetOut != NULL) {
+        *offsetOut = offset;
+    }
+    if (rotBuf != NULL) {
+        *rotBuf = rot;
+    }
+    D_800C5D58 = node;
+    D_800DCB08 = D_800DD670;
+    D_800DCB18 = D_800DD658;
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B6034);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B63C0);
 
+// The early return for mode 0xFF is what produces the original copy of dir.
+static inline s32 GetKeyframeDirection(ActorRecord *actor) {
+    u8 mode;
+    s32 dir;
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", FindKeyframeNode);
+    mode = D_800D23D8[(actor - D_800DD6A8) + 2];
+    dir = -1;
+    if (mode == 0xFF) {
+        return dir;
+    }
+    if (mode == 0) {
+        if (actor->unk03 == 1 || actor->unk03 == 2) {
+            if (actor->unk1F == 1) {
+                dir = 0;
+            } else if (actor->flag1E == dir) {
+                if (actor->unk1F == 0) {
+                    dir = 1;
+                }
+            }
+        }
+    } else if (mode == 1) {
+        if (actor->unk03 == 1 || actor->unk03 == 2) {
+            if (actor->unk1F == 1) {
+                dir = 2;
+            }
+        }
+    }
+    return dir;
+}
+
+static KeyframeNode *FindKeyframeNode(KeyframeNode *list, s16 cached, s16 *out, ActorRecord *actor) {
+    s32 dir;
+    s16 prev;
+
+    dir = GetKeyframeDirection(actor);
+    if (dir >= 0 && dir != 1) {
+        while (list->time != -1 && list->time != -2) {
+            list++;
+        }
+        if (out != NULL) {
+            *out = 0x1000;
+        }
+        if (list->time == -2) {
+            D_800C987C = list[1].time - 1;
+        }
+    } else {
+        prev = 0;
+        while (list->time != -1) {
+            if (list->time != -2 && cached - list->time <= 0) {
+                break;
+            }
+            prev = list->time;
+            list++;
+        }
+        if (out != NULL) {
+            if (list->time == -1) {
+                *out = 0x1000;
+            } else {
+                *out = ((cached - prev) << 12) / (list->time - prev);
+                *out = (*out < 0) ? 0 : (*out > 0x1000) ? 0x1000 : *out;
+            }
+        }
+    }
+    return list;
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B6968);
 
@@ -194,21 +574,225 @@ void func_800B7178(void) {
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B7240);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B73A4);
+// The points table is indexed by part position; one is a variable for the same reason as in func_800BE720.
+void func_800B73A4(ActorRecord *group) {
+    SVECTOR d;
+    VECTOR sq;
+    VECTOR *pts;
+    ActorPart *entry;
+    s8 dir;
+    s32 i;
+    s32 a;
+    s32 b;
+    s32 len;
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B7530);
+    pts = group->points;
+    dir = group->flag1E;
+    entry = group->parts;
+    for (i = 0; i < group->partCount; i++, entry++) {
+        if (dir == 1) {
+            b = entry->prevHalf;
+        } else {
+            s32 one = 1;
+            b = group->span - (entry->prevHalf + one);
+        }
+        a = b + dir;
+        d.vx = pts[a].vx - pts[b].vx;
+        d.vy = pts[a].vy - pts[b].vy;
+        d.vz = pts[a].vz - pts[b].vz;
+        gte_ldsv(&d);
+        gte_SQR(0);
+        gte_stlvnl(&sq);
+        len = SquareRoot0(sq.vx + sq.vy + sq.vz);
+        entry->prevWord = entry->currWord = len - entry->prevWord;
+        entry->prevHalf = entry->currHalf = group->span - entry->prevHalf - 2;
+        group->unk1F = group->slotCount - group->unk1F;
+    }
+    group->flag1E = -group->flag1E;
+}
+
+void func_800B7530(ActorRecord *group) {
+    ActorPart *entry;
+    ActorPart *best;
+    s32 maxWord;
+    s32 maxHalf;
+    s32 i;
+    s32 half;
+
+    maxWord = 0;
+    maxHalf = 0;
+    best = group->parts;
+    i = 0;
+    entry = best;
+    for (; i < group->partCount; i++, entry++) {
+        if (maxHalf < entry->prevHalf) {
+            maxHalf = entry->prevHalf;
+            maxWord = entry->prevWord;
+            best = entry;
+        } else if (maxHalf == entry->prevHalf) {
+            if (maxWord < entry->prevWord) {
+                maxWord = entry->prevWord;
+                best = entry;
+            }
+        }
+    }
+
+    {
+        s32 word = 0;
+        half = best->prevHalf;
+        entry = group->parts;
+        for (i = 0; i < group->partCount; i++, entry++) {
+            entry->prevHalf = half;
+            entry->prevWord = word;
+        }
+    }
+
+    entry = group->parts;
+    for (i = 0; i < group->partCount; i++, entry++) {
+        entry->prevWord += func_800B7080(group - D_800DD6A8, i);
+        func_800AEB58(entry, group);
+    }
+
+    entry = group->parts;
+    for (i = 0; i < group->partCount; i++, entry++) {
+        entry->currHalf = entry->prevHalf;
+        entry->currWord = entry->prevWord;
+    }
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B76F8);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B7C70);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B816C);
+static s32 func_800B816C(void) {
+    s32 done;
+    s32 val;
+    s32 clamped;
+    s32 *scroll;
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B8230);
+    done = 0;
+    if (D_800C4D2C < 0) {
+        D_800C4D2C = 4;
+        D_800DCB48 = 0;
+        D_800C4D40 = 0;
+        D_800C4D44 = 0x10;
+        D_800C5C04 = 4;
+        D_800C4D2C = 0;
+        D_800C4D58 = 0;
+    }
+
+    scroll = &D_800C4D58;
+    val = *scroll + 12;
+    *scroll = val;
+    if (val >= 0) {
+        clamped = 799;
+        if (val < 800) {
+            clamped = val;
+        }
+    } else {
+        clamped = 0;
+    }
+    *scroll = clamped;
+
+    D_800DCB48++;
+    if (D_800DCB48 >= 64) {
+        done = 1;
+        D_800C4D2C = 0;
+        D_800D23D8[0] = 0;
+        D_800C5C04 = 0;
+        D_800C4D58 = 0;
+    }
+    return done;
+}
+
+static s32 func_800B8230(void) {
+    s32 done;
+    SlotEntry *slots;
+    SlotEntry *slot;
+    s32 timer;
+    s32 step;
+
+    done = 0;
+    if (D_800C4D2C < 0) {
+        D_800C4D2C = 4;
+        D_800DCB48 = 0;
+        D_800C4D40 = 0;
+        D_800C4D44 = 0x10;
+        D_800C4D2C = 0;
+        D_800DCB4C = (D_800C97F4 - D_800C9868.vz) / 30;
+    }
+
+    slots = D_800DBFB8;
+    slot = slots + D_800C5C2C;
+    step = D_800DCB4C;
+    timer = D_800DCB48 + 1;
+    D_800DCB48 = timer;
+    slot->position.vy += step;
+    if (timer >= 31) {
+        done = 1;
+        D_800D23D8[0] = 0;
+        D_800C5C04 = 0;
+        D_800C4D2C = 0;
+        D_800C4D58 = 0;
+    }
+
+    D_800C9868.vx = slot->position.vx;
+    D_800C9868.vy = -slot->position.vz;
+    D_800C9868.vz = slot->position.vy;
+    worldPosToCell(&slot->position, D_800C9770);
+    D_800C9770[1] = (slots + D_800C5C2C)->vec;
+    return done;
+}
 
 
+static inline s32 FindSlotByMarker(s32 marker) {
+    s32 i;
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", PlaceRequestedObjects);
+    for (i = 0; i < D_800C5B50; i++) {
+        if (marker == D_800DBFB8[i].marker) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void PlaceRequestedObjects(u8 *flags) {
+    WorldPlacement *tbl;
+    SlotEntry *slot;
+    s32 i;
+    s32 id;
+    s32 idx;
+
+    tbl = D_800C96FC;
+    for (i = 0; i < 2; i++) {
+        id = flags[i + 0x6B];
+        if (id == 0) {
+            continue;
+        }
+        func_8009D840(i);
+        if (tbl[id].kind == 0x30) {
+            idx = FindSlotByMarker(0x40);
+            slot = &D_800DBFB8[idx];
+            slot->position.vx = tbl[id].x;
+            slot->position.vy = tbl[id].y;
+            slot->position.vz = tbl[id].z;
+            slot->vec.vy = tbl[id].rotY;
+            idx = FindSlotByMarker(0x41);
+            slot = &D_800DBFB8[idx];
+            slot->position.vx = tbl[id].x;
+            slot->position.vy = tbl[id].y;
+            slot->position.vz = tbl[id].z;
+            slot->vec.vy = tbl[id].rotY;
+        } else {
+            idx = FindSlotByMarker(func_800B0010(tbl[id].kind));
+            slot = &D_800DBFB8[idx];
+            slot->position.vx = tbl[id].x;
+            slot->position.vy = tbl[id].y;
+            slot->position.vz = tbl[id].z;
+            slot->vec.vy = tbl[id].rotY;
+        }
+    }
+}
 
 /**
  * @brief Walk the cmd-stream at @c D_800C96C8 (variant for object slot 1).
@@ -281,7 +865,34 @@ s32 func_800B85DC(s16 *out) {
     return result;
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", ResetPositionHistory);
+void ResetPositionHistory(void) {
+    WorldTrailPoint point;
+    WorldTrailPoint *p; // the position fields are written through a pointer; direct stores do not match
+    GlyphQuery q;
+    VECTOR unused; // never used, but the compiled code only matches the original with it
+    s32 i;
+    s32 type;
+
+    p = &point;
+    D_800DCAB8 = 3;
+    D_800DCAB9 = 0;
+    p->x = D_800C9868.vx;
+    p->y = D_800C9868.vz;
+    p->z = -D_800C9868.vy;
+    D_800DCAD8 = 0;
+    point.angle = D_800C9770[1].vy;
+    D_800DCABA = -1;
+    q.pos.vx = point.x;
+    q.pos.vy = point.y;
+    q.pos.vz = point.z;
+    q.buf.angle = worldPosToCell(&q.pos, &q.buf.proj);
+    type = glyphAt(&q, NULL)->type;
+    point.onLand = type < 6;
+    for (i = 0; i < 16; i++) {
+        D_800DC9B8[i] = point;
+    }
+    D_800DCAC8 = point;
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B893C);
 
