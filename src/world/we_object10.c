@@ -122,7 +122,44 @@ s32 func_800BD7E4(s32 charIdx) {
     return 0;
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", RegisterSceneObject);
+// Ids below FIRST_OBJ_ID get a render slot; slot->lookupIdx is the count of such ids before it.
+s32 RegisterSceneObject(WorldObjList *actor, SlotEntry *slot, s32 marker, s32 flag, SVECTOR *rot, VECTOR *trans) {
+    s32 i;
+    s32 count;
+
+    if (slot != NULL) {
+        if (trans != NULL) {
+            slot->position = *trans;
+        }
+        if (rot != NULL) {
+            slot->vec = *rot;
+        }
+        slot->marker = marker;
+        if (flag >= 0) {
+            slot->flag = flag;
+        }
+    }
+
+    for (count = i = 0; i < OBJ_SLOT_COUNT; i++) {
+        if (actor->ids[i] == OBJ_LIST_END) {
+            actor->ids[i] = marker;
+            if (marker < FIRST_OBJ_ID) {
+                if (slot != NULL) {
+                    slot->lookupIdx = count;
+                }
+                return 1;
+            }
+            if (slot != NULL) {
+                slot->lookupIdx = -1;
+            }
+            return 0;
+        }
+        if (actor->ids[i] < FIRST_OBJ_ID) {
+            count++;
+        }
+    }
+    return -1;
+}
 
 /**
  * @brief Copy 10 flag bytes from D_800780D8 to destination struct.
@@ -421,9 +458,54 @@ void func_800BDDC4(SlotEntry *input) {
     func_800AC0A0(3, &input->position, &buf, 3);
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BDEF4);
+// Declared s32 but returns nothing: the original falls off the end, which keeps v0 live
+// at the epilogue and leaves the branch delay slot empty.
+s32 func_800BDEF4(SlotEntry *input, s32 kind, s32 high) {
+    VECTOR pos;
+    SVECTOR buf;
+    s32 marker;
+    s32 dy;
+    s32 threshold;
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE040);
+    marker = 0xB;
+    if (kind == 0) {
+        marker = 0xA;
+    }
+    dy = input->position.vy - D_800C97F4;
+    dy = (dy > 0) ? 0 : dy;
+    if (high != 0) {
+        dy += 224;
+    } else {
+        dy += 128;
+    }
+    threshold = dy + D_800C4D4C * 2;
+    if (func_8009CC3C() < threshold) {
+        pos = input->position;
+        pos.vy = D_800C97F4;
+        buf = input->vec;
+        buf.vy += (func_8009CC3C() - 0x80) * 16;
+        func_800AC0A0(marker, &pos, &buf, 3);
+        buf = input->vec;
+        buf.vy -= (func_8009CC3C() - 0x80) * 16;
+    }
+}
+
+void func_800BE040(void) {
+    VECTOR pos;
+    SVECTOR vec;
+    s32 r;
+
+    pos = D_800DD6A8[0].parts[1].pos;
+    vec = D_800DD6A8[0].parts[1].rot;
+    r = func_8009CC3C();
+    vec.vy += 0x200 + (r - 0x80) * 4;
+    func_800AC0A0(0, &pos, &vec, 3);
+
+    vec = D_800DD6A8[0].parts[1].rot;
+    r = func_8009CC3C();
+    vec.vy -= 0x200 + (r - 0x80) * 4;
+    func_800AC0A0(0, &pos, &vec, 3);
+}
 
 /**
  * @brief Fetch the @c field52 halfword of the lookup target for slot @p idx.
@@ -623,7 +705,31 @@ void func_800BE69C(ActorRecord *group) {
     }
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE720);
+// one is a variable because a literal 1 lets gcc fold span - (prevHalf + 1) into span - 1.
+s32 func_800BE720(ActorRecord *group) {
+    ActorPart *entry = group->parts;
+    s32 i;
+    s32 one;
+    s32 j;
+
+    for (i = 0; i < group->partCount; i++, entry++) {
+        u8 *slots;
+        s32 key;
+
+        if (entry->prevWord == 0 && entry->prevHalf == 0) {
+            return 1;
+        }
+        slots = (group->flag1E == 1) ? group->slotsB.ids : group->slotsA.ids;
+        one = 1;
+        key = (group->flag1E == 1) ? entry->prevHalf : group->span - (entry->prevHalf + one);
+        for (j = 0; j < group->slotCount; j++) {
+            if (slots[j] == key && entry->prevWord == 0) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 /**
  * @brief Load each unique object referenced by an object-id list.
@@ -903,7 +1009,38 @@ s32 func_800BEC1C(s32 kind) {
     return 0;
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", UpdateActorCameraDistance);
+// ids[2..3] list the actors, 0xFF ends the list. nearestDistSq is 0xFFFFFFFF when no part is active.
+void UpdateActorCameraDistance(u8 *ids) {
+    ActorRecord *rec;
+    ActorPart *part;
+    SVECTOR d;
+    VECTOR sq;
+    u32 best;
+    u32 sum;
+    s32 i;
+    s32 j;
+
+    rec = D_800DD6A8;
+    for (i = 0; (ids + i)[2] != 0xFF && i < 2; i++, rec++) {
+        best = -1;
+        part = rec->parts;
+        for (j = 0; j < rec->partCount; j++, part++) {
+            if (part->active == 1) {
+                d.vx = D_800C9770[0].vx - part->x;
+                d.vy = D_800C9770[0].vy - part->y;
+                d.vz = D_800C9770[0].vz - part->z;
+                gte_ldsv(&d);
+                gte_SQR(0);
+                gte_stlvnl(&sq);
+                sum = sq.vx + sq.vy + sq.vz;
+                if (sum < best) {
+                    best = sum;
+                }
+            }
+        }
+        rec->nearestDistSq = best;
+    }
+}
 
 /**
  * @brief Search g_gameState array for an active entry with type 0xA2.
