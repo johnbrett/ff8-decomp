@@ -265,10 +265,16 @@ typedef struct EffectEntity {
     /* 0x5A */ s16 unk05A;
     /* 0x5C */ s16 unk05C;
     /* 0x5E */ s16 unk05E;
-    /* 0x60 */ u8 unk060[0x63 - 0x60]; /**< func_801A3C14 aims an SVECTOR across
-                                          this and @c unk063. */
-    /* 0x63 */ u8 unk063;
-    /* 0x64 */ u8 pad064[0x68 - 0x64];
+    /* 0x60 */ union {
+        struct {
+            /* 0x60 */ s16 countdown;
+            /* 0x62 */ u8 unk062;
+            /* 0x63 */ u8 unk063;
+        } timer;
+        SVECTOR accel;
+        SVECTOR anchor;
+        s32 pose[2]; /* effectPoseWalk buffer continues past the union */
+    } scratch;
     /* 0x68 */ s16 unk068;
     /* 0x6A */ u8 pad06A[0x6C - 0x6A];
     /* 0x6C */ s16 unk06C;
