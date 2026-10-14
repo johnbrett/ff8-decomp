@@ -1,0 +1,1 @@
+TransformSnipeLaserPosition = 0x801A3238; // type:func
