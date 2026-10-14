@@ -3797,14 +3797,17 @@ binaries:
     target_path: original/effect/effect_187.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_187.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_187
     type: code
     start: 0x0
     vram: 0x80190000
     subsegments:
-    - [0x0, c, effect_187]
-    - [0xCF6C, .rodata, effect_187]
+    - [0x0, c, effect_187_start]
+    - [0x48F4, c, lib/projecttriangle]
+    - [0x4A24, c, effect_187]
+    - [0xCF6C, .rodata, effect_187_start]
     - [0xCF98, bin, effect_187]
   - [0x4E92C]
 - name: effect_188

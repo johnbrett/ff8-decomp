@@ -1,5 +1,6 @@
 #include "effect/lib/project.h"
 #include "psxsdk/libgpu.h"
+#include "psxsdk/libgte.h"
 #include "psxsdk/inline_c.h"
 
 typedef union {

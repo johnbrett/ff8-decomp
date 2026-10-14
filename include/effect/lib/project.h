@@ -1,7 +1,7 @@
 #ifndef EFFECT_LIB_PROJECT_H
 #define EFFECT_LIB_PROJECT_H
 
-#include "common.h"
+#include <common.h>
 #include "effect_params.h"
 
 #define EFFECT_PROJECT_SEMITRANS 0x02000000
