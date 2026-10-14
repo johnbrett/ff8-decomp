@@ -5937,7 +5937,8 @@ binaries:
     subsegments:
     - [0x0, c, effect_327_start]
     - [0x42CC, c, lib/projecttriangle]
-    - [0x43FC, c, effect_327]
+    - [0x43FC, c, lib/projectstoredtriangle]
+    - [0x4508, c, effect_327]
     - [0xF220, .rodata, effect_327_start]
     - [0xF264, bin, effect_327]
   - [0x5259C]
