@@ -5,7 +5,6 @@
 #include "common.h"
 
 
-INCLUDE_ASM("asm/ovl/effect_167/nonmatchings/effect_167", func_801A0730);
 
 INCLUDE_ASM("asm/ovl/effect_167/nonmatchings/effect_167", func_801A083C);
 
