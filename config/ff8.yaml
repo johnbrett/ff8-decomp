@@ -1396,14 +1396,17 @@ binaries:
     target_path: original/effect/effect_037.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_037.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_037
     type: code
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_037]
-    - [0xE6BC, .rodata, effect_037]
+    - [0x0, c, effect_037_start]
+    - [0xCD54, c, lib/arctrail]
+    - [0xCF08, c, effect_037]
+    - [0xE6BC, .rodata, effect_037_start]
     - [0xE6D0, bin, effect_037]
   - [0x47CBC]
 - name: effect_038
