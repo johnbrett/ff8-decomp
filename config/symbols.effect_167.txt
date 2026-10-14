@@ -1,0 +1,1 @@
+ProjectTextureTriangle = 0x801A0600; // type:func

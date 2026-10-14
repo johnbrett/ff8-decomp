@@ -3498,13 +3498,16 @@ binaries:
     target_path: original/effect/effect_167.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_167.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_167
     type: code
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_167]
+    - [0x0, c, effect_167_start]
+    - [0x600, c, lib/projecttriangle]
+    - [0x730, c, effect_167]
     - [0x3B0C, .rodata, effect_167]
     - [0x3B24, bin, effect_167]
   - [0x262BC]
