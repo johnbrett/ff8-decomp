@@ -86,7 +86,7 @@ s32 func_800CD35C(ParticleEntry *p) {
     scale.vy = p->sizeY;
     scale.vz = p->sizeX;
     ScaleMatrix(&m, &scale);
-    CompMatrix(&D_800F02C8, &m, &m);
+    CompMatrix(&D_800F02C8.matrix, &m, &m);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
 
@@ -172,7 +172,7 @@ s32 func_800CDF3C(ParticleEntry *p) {
     scale.vy = p->sizeY;
     scale.vz = p->sizeX;
     ScaleMatrix(&m, &scale);
-    CompMatrix(&D_800F02C8, &m, &m);
+    CompMatrix(&D_800F02C8.matrix, &m, &m);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
 

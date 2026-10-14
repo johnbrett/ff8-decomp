@@ -229,7 +229,7 @@ INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B6954);
  * @brief Call func_800B3650 with D_800F02C8 as the argument.
  */
 void func_800B6A9C(void) {
-    func_800B3650(&D_800F02C8);
+    func_800B3650(&D_800F02C8.matrix);
 }
 
 /**
@@ -239,7 +239,7 @@ void func_800B6A9C(void) {
  */
 static void func_800B6AC0(MATRIX *a0) {
     MATRIX m;
-    CompMatrix(&D_800F02C8, a0, &m);
+    CompMatrix(&D_800F02C8.matrix, a0, &m);
     func_800B3650(&m);
 }
 

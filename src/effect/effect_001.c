@@ -116,8 +116,8 @@ static s32 func_801A2E48(EffectSpark *spark) {
             out[i].vy += spark->pos.vy;
             out[i].vz += spark->pos.vz;
         }
-        gte_SetTransMatrix(&D_800F02C8);
-        gte_SetRotMatrix(&D_800F02C8);
+        gte_SetTransMatrix(&D_800F02C8.matrix);
+        gte_SetRotMatrix(&D_800F02C8.matrix);
         gte_ldv3(&out[0], &out[1], &out[2]);
         gte_rtpt();
         gte_stsxy3(&sxy[0], &sxy[1], &sxy[2]);
@@ -641,7 +641,7 @@ s32 func_801A4434(EffectEntity *entity) {
     };
     MATRIX *world = (MATRIX *)EFFECT_SCRATCH_MATRIX;
 
-    *world = D_800F02C8;
+    *world = D_800F02C8.matrix;
     D_801C58EC = world;
     D_801C58E8 = world;
     if (entity->unk05C & 1) {

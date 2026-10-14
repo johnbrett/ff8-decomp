@@ -926,8 +926,18 @@ extern s16 D_800F02A0;
 
 extern s16 D_800F02C2;
 
+typedef struct {
+    /* 0x00 */ u32 pairs[4];
+    /* 0x10 */ u16 last;
+} BattleMatrixRotation;
+
+typedef union {
+    /* 0x00 */ MATRIX matrix;
+    /* 0x00 */ BattleMatrixRotation rotation;
+} BattleMatrix;
+
 /** @brief The world matrix for this frame; effect matrices compose onto it. */
-extern MATRIX D_800F02C8;
+extern BattleMatrix D_800F02C8;
 
 /** @brief The battle renderer's graphics context. */
 extern BattleGfx *D_800FA5E8;

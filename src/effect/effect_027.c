@@ -352,7 +352,7 @@ s32 func_801A99C8(EffectEntity *entity) {
     };
     MATRIX *view = EFFECT_SCRATCHPAD;
 
-    *view = D_800F02C8;
+    *view = D_800F02C8.matrix;
     g_effectStackTop = (u8 *)view;
     g_effectStackBase = view;
     if (entity->unk05C & EFFECT_FRAME_ODD) {

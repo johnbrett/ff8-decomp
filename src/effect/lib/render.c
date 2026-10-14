@@ -469,7 +469,7 @@ void effectRenderModel(EffectRender *render) {
     } else if (func_800BCA3C(slot->unk060, slot->unk06C) != 0) {
         func_800BCF6C(slot->unk060, slot->unk06C, render->unk0D8);
     }
-    CompMatrix(&D_800F02C8, &render->unk014, &render->unk034);
+    CompMatrix(&D_800F02C8.matrix, &render->unk014, &render->unk034);
     if (!(slot->flags & BATTLE_SLOT_FLAG_UNK20)) {
         *render->unk00C = func_800BC060(slot, D_800FA5E8->unk4040, 0x10, *render->unk00C);
     }

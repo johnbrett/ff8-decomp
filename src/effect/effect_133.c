@@ -49,23 +49,23 @@ static s32 DrawHypnotizeModel(HypnotizeModel *model) {
     HypnotizeDrawRequest request;
 
     gte_lddp(model->pos.fields.scale);
-    gte_ldsv(D_800F02C8.m[0]);
+    gte_ldsv(D_800F02C8.matrix.m[0]);
     gte_gpf1();
     gte_stsv(request.m.m[0]);
-    gte_ldsv(D_800F02C8.m[1]);
+    gte_ldsv(D_800F02C8.matrix.m[1]);
     gte_gpf1();
     gte_stsv(request.m.m[1]);
-    gte_ldsv(D_800F02C8.m[2]);
+    gte_ldsv(D_800F02C8.matrix.m[2]);
     gte_gpf1();
     gte_stsv(request.m.m[2]);
-    gte_SetRotMatrix(&D_800F02C8);
+    gte_SetRotMatrix(&D_800F02C8.matrix);
     gte_ldv0(&model->pos.vector);
     gte_mvmva(1, 0, 0, 3, 0);
     gte_stlvnl(request.m.t);
     request.depthOffset = -128;
-    request.m.t[0] += D_800F02C8.t[0];
-    request.m.t[1] += D_800F02C8.t[1];
-    request.m.t[2] += D_800F02C8.t[2];
+    request.m.t[0] += D_800F02C8.matrix.t[0];
+    request.m.t[1] += D_800F02C8.matrix.t[1];
+    request.m.t[2] += D_800F02C8.matrix.t[2];
     request.vertices = D_801D776C->vertices;
     return effectPoseWalk(model->pose, func_801A21E4, &request) == 0 ? 2 : 0;
 }

@@ -3049,13 +3049,18 @@ binaries:
     target_path: original/effect/effect_134.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_134.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_134
     type: code
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_134]
+    - [0x0, c, effect_134_start]
+    - [0x1EB4, c, lib/fill]
+    - [0x1ED8, c, effect_134_middle]
+    - [0x254C, c, lib/pose]
+    - [0x2F48, c, effect_134]
     - [0x3E98, bin, effect_134]
   - [0x32514]
 - name: effect_135

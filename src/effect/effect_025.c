@@ -161,7 +161,7 @@ static void func_801A6DB0(EffectEntity *entity) {
     m.t[1] = entity->pos.vy;
     m.t[2] = entity->pos.vz;
     ScaleMatrix(&m, (VECTOR *)&entity->unk030);
-    CompMatrix(&D_800F02C8, &m, &m);
+    CompMatrix(&D_800F02C8.matrix, &m, &m);
     req.colours = colours;
     req.unk08 = &D_801D3EA4;
     if (effectPoseWalk(entity->scratch.pose, func_801A6A00, &req) == 0) {
@@ -221,7 +221,7 @@ static void func_801A6FD4(EffectEntity *entity) {
     m.t[1] = entity->pos.vy;
     m.t[2] = entity->pos.vz;
     ScaleMatrix(&m, (VECTOR *)&entity->unk030);
-    CompMatrix(&D_800F02C8, &m, &m);
+    CompMatrix(&D_800F02C8.matrix, &m, &m);
     req.colours = colours;
     req.unk08 = &D_801D3EA4;
     if (effectPoseWalk(entity->scratch.pose, func_801A6A00, &req) == 0) {
@@ -554,7 +554,7 @@ static s32 func_801A7BA8(EffectEntity *entity) {
     if (entity->flags & EFFECT_FLAG_UNK08) {
         render = &D_801ED304;
         effectSlotAnchor0(entity, &point);
-        entity->unk052 = effectMatrixHeading(&D_800F02C8);
+        entity->unk052 = effectMatrixHeading(&D_800F02C8.matrix);
         entity->pos.vx = point.vx + rsin(entity->unk052) / 4;
         entity->pos.vz = point.vz + rcos(entity->unk052) / 4;
         render->unk0B4.vy = entity->pos.vy;

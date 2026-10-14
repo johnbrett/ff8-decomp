@@ -293,7 +293,7 @@ static s32 func_801A0434(FireBurst *burst) {
     scale.vx = scale.vy = burst->scale;
     scale.vz = ONE;
     ScaleMatrix(&m, &scale);
-    CompMatrix(&D_800F02C8, &m, &m);
+    CompMatrix(&D_800F02C8.matrix, &m, &m);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
 

@@ -21,7 +21,7 @@ void func_801A4FE0(EffectEntity *entity, BattleSpriteAnim *anim,
     m.t[0] = entity->pos.vx;
     m.t[1] = 0;
     m.t[2] = entity->pos.vz;
-    CompMatrix(&D_800F02C8, &m, &m);
+    CompMatrix(&D_800F02C8.matrix, &m, &m);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
     prim = func_800B3698(sizeof(BattleSpritePrim));
@@ -53,7 +53,7 @@ void func_801A50D4(EffectEntity *entity, BattleSpriteAnim *anim,
     m.t[0] = entity->pos.vx;
     m.t[1] = 0;
     m.t[2] = entity->pos.vz;
-    CompMatrix(&D_800F02C8, &m, &m);
+    CompMatrix(&D_800F02C8.matrix, &m, &m);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
     prim = func_800B3698(sizeof(BattleSpritePrim));
