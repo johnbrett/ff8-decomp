@@ -1,0 +1,7 @@
+effectFillWords = 0x801A1EB4; // type:func
+effectPoseInit = 0x801A24F4; // type:func
+effectPoseFindShorts = 0x801A2674; // type:func
+effectPoseFindWords = 0x801A26DC; // type:func
+effectPoseStepChannel = 0x801A2744; // type:func
+effectPoseWalk = 0x801A2934; // type:func
+DrawHypnotizeModel = 0x801A3188; // type:func

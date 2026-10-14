@@ -49,7 +49,7 @@ typedef struct {
 
 /** @brief What @ref effectPoseWalk hands each part it has posed to. */
 typedef void (*EffectPartFn)(s32 *pose, EffectPartPose *part,
-                             EffectDrawRequest *req);
+                             void *req);
 
 /**
  * @brief Clear @p size bytes of pose state at @p out and seed it from @p model.
@@ -57,6 +57,6 @@ typedef void (*EffectPartFn)(s32 *pose, EffectPartPose *part,
 void effectPoseInit(EffectPoseModel *model, s32 *out, s32 size);
 
 /** @brief Walk one pose script and hand every part it poses to @p fn. */
-s32 effectPoseWalk(s32 *pose, EffectPartFn fn, EffectDrawRequest *req);
+s32 effectPoseWalk(s32 *pose, EffectPartFn fn, void *req);
 
 #endif /* EFFECT_LIB_POSE_H */

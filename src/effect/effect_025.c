@@ -35,6 +35,8 @@
 #define EFFECT_PART_DEPTH_RAMP 0x40000000
 /** @} */
 
+static void func_801A6A00(s32 *pose, EffectPartPose *part, void *context);
+
 /**
  * @brief Build and submit one posed part's primitive packet.
  *
@@ -50,7 +52,8 @@
  * @param req  Draw state: the parent matrix, the per-part colours and flags.
  */
 static void func_801A6A00(s32 *pose, EffectPartPose *part,
-                          EffectDrawRequest *req) {
+                          void *context) {
+    EffectDrawRequest *req = context;
     EffectPrimBuild *prim;
     EffectVertexAnim *anim;
     MATRIX m;
