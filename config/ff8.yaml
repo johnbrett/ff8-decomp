@@ -5925,14 +5925,17 @@ binaries:
     target_path: original/effect/effect_327.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_327.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_327
     type: code
     start: 0x0
     vram: 0x80190000
     subsegments:
-    - [0x0, c, effect_327]
-    - [0xF220, .rodata, effect_327]
+    - [0x0, c, effect_327_start]
+    - [0x42CC, c, lib/projecttriangle]
+    - [0x43FC, c, effect_327]
+    - [0xF220, .rodata, effect_327_start]
     - [0xF264, bin, effect_327]
   - [0x5259C]
 - name: effect_328
