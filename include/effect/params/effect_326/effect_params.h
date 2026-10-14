@@ -1,0 +1,6 @@
+#ifndef EFFECT_PARAMS_H
+#define EFFECT_PARAMS_H
+
+#define EFFECT_PROJECTION_PREFIX_WORDS 6
+
+#endif
