@@ -1,0 +1,1 @@
+StepEffectArcTrail = 0x801A9928; // type:func
