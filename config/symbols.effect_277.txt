@@ -1,0 +1,7 @@
+effectFillWords = 0x801A1EB4; // type:func
+effectPoseInit = 0x801A260C; // type:func
+effectPoseFindShorts = 0x801A278C; // type:func
+effectPoseFindWords = 0x801A27F4; // type:func
+effectPoseStepChannel = 0x801A285C; // type:func
+effectPoseWalk = 0x801A2A4C; // type:func
+DrawFunguarLaserModel = 0x801A3408; // type:func

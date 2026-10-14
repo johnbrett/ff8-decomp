@@ -5165,13 +5165,18 @@ binaries:
     target_path: original/effect/effect_277.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_277.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_277
     type: code
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_277]
+    - [0x0, c, effect_277_start]
+    - [0x1EB4, c, lib/fill]
+    - [0x1ED8, c, effect_277_middle]
+    - [0x260C, c, lib/pose]
+    - [0x3008, c, effect_277]
     - [0x40A8, bin, effect_277]
   - [0x346BC]
 - name: effect_278
