@@ -1,1 +1,2 @@
 ProjectTextureTriangle = 0x801948F4; // type:func
+EmitProjectedTextureTriangle = 0x80194A24; // type:func

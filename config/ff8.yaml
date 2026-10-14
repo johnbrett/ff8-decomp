@@ -3807,7 +3807,8 @@ binaries:
     subsegments:
     - [0x0, c, effect_187_start]
     - [0x48F4, c, lib/projecttriangle]
-    - [0x4A24, c, effect_187]
+    - [0x4A24, c, lib/projectstoredtriangle]
+    - [0x4B30, c, effect_187]
     - [0xCF6C, .rodata, effect_187_start]
     - [0xCF98, bin, effect_187]
   - [0x4E92C]
