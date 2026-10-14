@@ -1,1 +1,2 @@
 ProjectTextureTriangle = 0x801942CC; // type:func
+ProjectSimpleTextureTriangle = 0x80190A90; // type:func
