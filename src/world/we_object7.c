@@ -3,12 +3,20 @@
 #include "world.h"
 #include "world/we_object6.h"
 #include "world/we_object7.h"
+#include "world/we_object10.h"
 #include "world/we_object3.h"
 #include "world/we_object1.h"
+#include "world/we_object4.h"
+#include "world/we_object2.h"
+#include "world/we_object5.h"
+#include "world/we_object9.h"
+#include "snd_init.h"
 
-/* ActorRecord now lives in world.h (shared across world TUs). */
-
-
+// Private prototypes
+void func_800B6034(VECTOR *out, UnkWorldKeyframe *node, ActorRecord *recs);
+void func_800B63C0(VECTOR *out, UnkWorldKeyframe *node, ActorRecord *recs);
+void func_800B76F8(void);
+s32 func_800B7C70(void);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B310C);
 
@@ -75,19 +83,22 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B3AB8);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B3ED0);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B3FD4);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B438C);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", SaveScenePlacement);
+
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", RestoreScenePlacement);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B454C);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B4AA0);
 
+
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B56A0);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B5974);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B5ADC);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", GetFootprintCorners);
+
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B5C60);
 
@@ -95,32 +106,7 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B6034);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B63C0);
 
-/**
- * @brief Walk a sorted @c KeyframeNode list to find the entry matching
- * an actor's current phase, optionally writing an interpolation factor.
- *
- * Reads the actor's mode byte from @c D_800D23D8 and, combined with
- * @c unk03 / @c unk1F / @c flag1E, decides whether to:
- * - skip past leading @c -2 / @c -1 sentinels (modes 0 / 2);
- * - search forward for the first keyframe with @c time @>= @p cached
- *   and write a 0x1000-scaled interpolation factor to @p out (modes -1 / 1).
- *
- * When the matching entry is a @c -2 sentinel, decrements the next
- * entry's u16 time into @c D_800C987C.
- *
- * @param list   Keyframe list head (stride 0x20).
- * @param cached Current time / progress value to interpolate against.
- * @param out    Optional output for the 0..0x1000 interpolation factor.
- * @param actor  Actor record (used to look up the mode byte).
- * @return The list pointer advanced past the matched/inserted-at node.
- *
- * @note 93.30% match in permuter scratch at @c permuter/func_800B674C/base.c.
- * Key trick (found by permuter): declare @c clamped as @c u32 (not @c s16)
- * for the final interpolation factor — produces the right register
- * allocation for the post-clamp store sequence. Remaining gap is gcc 2.8.0
- * register-allocation differences in the dir dispatch and search loop
- * (@c addiu @c -1 vs @c addu @c t1, and v0/v1 swap in the loop body).
- */
+
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B674C);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B6968);
@@ -152,7 +138,7 @@ s32 func_800B7080(s32 idx, s32 count) {
 
     e = &D_800DD6A8[i];
     if (e->flag1E != -1) {
-        count = e->unk02 - (count + one);
+        count = e->partCount - (count + one);
     }
 
     cmds  = D_800C5C44;
@@ -220,9 +206,9 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B816C);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B8230);
 
+
+
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B83B4);
-
-
 
 /**
  * @brief Walk the cmd-stream at @c D_800C96C8 (variant for object slot 1).
@@ -295,7 +281,7 @@ s32 func_800B85DC(s16 *out) {
     return result;
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B881C);
+INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", ResetPositionHistory);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B893C);
 

@@ -36,19 +36,62 @@ typedef struct {
 
 /* File-private world data. */
 extern u8 *D_800C96C8;
+extern s16 D_800DCB4C;
 
-/* func_8009B358/func_8009B550 are defined in we_object1, func_8009D8A8 in
- * we_object2; addItemToInventory and func_800A5DC8 are main-binary.
- * Caller-local prototypes. */
-extern void func_8009B550(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6);
+typedef struct {
+    /* 0x00 */ s32 x;
+    /* 0x04 */ s32 y;
+    /* 0x08 */ s32 z;
+    /* 0x0C */ s16 angle;
+    /* 0x0E */ u8 unk0E;
+    /* 0x0F */ u8 unk0F;
+} WorldTrailPoint;
+
+extern WorldTrailPoint D_800DC9B8[16]; // Position history ring, seeded with one point
+extern u8 D_800DCAB8;
+extern u8 D_800DCAB9;
+extern s8 D_800DCABA;
+extern WorldTrailPoint D_800DCAC8;
+extern s32 D_800DCAD8;
+
+/* addItemToInventory is main-binary. */
 extern void addItemToInventory(s32 itemId, s32 count);
 
 extern s32  func_800B4AA0(void);
 extern void func_800B56A0(void);
 extern void func_800B7240(s8 v);
-extern void func_800B881C(void);
+extern void ResetPositionHistory(void);
 extern void func_800B893C(void);
 
-extern void func_800B3FD4(Slot *slot, s32 mode);
+extern void SaveScenePlacement(Slot *slot, u8 mode);
+extern void RestoreScenePlacement(Slot *slot, u8 mode);
+extern s32 func_800B3ED0(SVECTOR *a, SVECTOR *b);
+extern s32 func_800B5974(s8 marker, s16 *outA, s16 *outB, s32 mode);
+extern s32 func_800B7080(s32 idx, s32 count);
+extern s32 GetFootprintCorners(s32 id, SVECTOR *out, u16 *param, s32 margin);
+extern void func_800B5C60(UnkWorldKeyframe *list, s16 count, MATRIX *outMat, SVECTOR *outAngles,
+                                 SVECTOR *rotBuf, SVECTOR *offsetOut, ActorRecord *recs);
+extern void func_800B73A4(ActorRecord *group);
+extern void func_800B7530(ActorRecord *group);
+extern void func_800B83B4(u8 *flags);
+
+typedef struct {
+    /* 0x00 */ s32 unk00;
+    /* 0x04 */ s32 unk04;
+    /* 0x08 */ s16 unk08;
+    /* 0x0A */ u8 unk0A;
+    /* 0x0B */ u8 unk0B;
+} UnkWorldPlacement;
+
+extern u8 *D_800D228C;
+extern VECTOR D_800DCAE8;
+extern s32 D_800DCAF8;
+extern UnkWorldKeyframe *D_800C5D58;
+extern VECTOR D_800DCB08;
+extern VECTOR D_800DCB18;
+extern VECTOR D_800DCB28;
+extern VECTOR D_800DCB38;
+extern VECTOR D_800DD670;
+extern UnkWorldPlacement *D_800C96FC;
 
 #endif /* WORLD_WE_OBJECT7_H */

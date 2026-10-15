@@ -47,12 +47,15 @@ extern VECTOR     D_800DD658;     /* source position for func_800BC51C          
 extern void func_800A84D0(void);
 extern s32  func_800A4700(s32 a, s32 b);
 extern s32  func_800A475C(s32 a, s32 b);
+extern void func_800AC778(VECTOR *posA, VECTOR *posB, s16 angleArg, MATRIX *outMat,
+                          SVECTOR *outAngles, SVECTOR *outOffset, SVECTOR *outRotBuf);
+extern void func_800ACA70(VECTOR *out, MATRIX *input);
+extern void func_800ACBD0(VECTOR *out, SVECTOR *in);
+extern void func_800AC9F4(SVECTOR *out, s16 x, s16 z);
 /* Rotates four corner offsets into place and projects them; @c outSXY takes
  * the four packed screen points and @c outOTZ their average depth. */
 extern void func_800ABEF0(SVECTOR *src, SVECTOR *rot, SVECTOR *trans,
                           DVECTOR *outSXY, u32 *outOTZ);
-extern void func_800B5C60(s32 ctx, s16 count, MATRIX *outMat, SVECTOR *outAngles,
-                          SVECTOR *rotBuf, u8 *xform, ActorRecord *recs);
 
 /* Depth-cue a CVECTOR run into BGR555 halfwords (see the definition for the
    per-pixel blend and the STP-bit packing). */

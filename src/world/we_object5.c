@@ -2,6 +2,7 @@
 #include "world.h"
 #include "world/we_object5.h"
 #include "world/we_object6.h"
+#include "world/we_object7.h"
 #include "world/we_object3.h"
 #include "battle.h"
 #include "psxsdk/libgpu.h"
@@ -592,7 +593,7 @@ void func_800AC468(void *unused_a0, WorldViewXform *oa, WorldViewXform *mh, s32 
 
     if (mode == 0 && D_800C9878 != 0) {
         func_800B5C60(D_800C9878, D_800C987C, &mh->matrix, &oa->angles,
-                      D_800C97F8, (u8 *)&D_800D2390,
+                      D_800C97F8, &D_800D2390.head,
                       ((WorldFlags *)D_800D23D8)->opParam == 4 ? &D_800DD6A8[1]
                                                               : &D_800DD6A8[0]);
         D_800C987C++;

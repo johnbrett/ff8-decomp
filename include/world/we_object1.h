@@ -129,6 +129,7 @@ extern void func_8009AEE4(s32 id);
 extern void func_8009B954(s32 a, s32 b, s32 c);
 
 extern s32 func_8009B358(s32 slotIdx, s32 strIdx, u8 *text);
+extern void func_8009B550(s32 slotIdx, s32 strIdx, u8 *text, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
 
 extern s32 func_8009CC3C(void);
 

@@ -70,10 +70,6 @@ extern void setWorldMapTransVector(s16 coord0, s16 coord1);
 /* Register master-list objects not yet present in any tracking list onto the active list. */
 extern void registerNewWorldObjects(void);
 
-/* Generate up to 5 spread-positioned SVECTOR offsets for the scene @p ctx. */
-extern void func_800B5ADC(s32 ctx, SVECTOR *out, s32 c, s32 d);
-
-
 /* Compute a linear tile index from 2D world coordinates (32x24 grid). */
 extern s32 func_800A5E40(s32 x, s32 y);
 
@@ -175,6 +171,7 @@ extern s32              D_800C9ED0;   /**< Pad 0's raw frame parameter. */
 extern SVECTOR          D_800CA038;   /**< Reference offset fed to the pool placer. */
 extern s32              D_800D2238;
 
+extern void func_800A40C0(void);
 extern void func_800A5F78(s32 screen);
 
 extern void func_800A5FD4(s32 screen);

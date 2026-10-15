@@ -72,6 +72,9 @@ extern s32  getAngleDelta(s32 a, s32 b);
 extern void func_8009DB88(u8 *p);
 extern void func_8009E5C8(VECTOR *pos, u8 *p, SVECTOR *ang, void *x);
 
+extern s32  func_8009D864(s32 idx);
 extern void func_8009D8A8(s32 a0);
+extern void func_8009D840(s32 idx);
+extern s32  pickAudioTransition(s32 mapId, s32 cmd);
 
 #endif /* WORLD_WE_OBJECT2_H */
