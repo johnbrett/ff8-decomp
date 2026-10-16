@@ -14,4 +14,12 @@ void func_800B8870(u8 *a0, s32 count);
 /** @brief Allocate a handler for @c func_800B8BEC and store its parameters. */
 void func_800B8F4C(s32 a0);
 
+s32 BuildBattleDirectionBasis(VECTOR *input, MATRIX *matrix);
+void MoveBattleCameraOutward(s32 distance);
+void UpdateBattleCameraMatrix(void);
+void ResetBattleCameraTasks(void);
+SVECTOR *InterpolateBattleVector(s16 value, s16 *knots, s16 *valuesX, s16 *valuesY,
+                                s16 *valuesZ, s32 count, float *tangentsX,
+                                float *tangentsY, float *tangentsZ, SVECTOR *result);
+
 #endif /* BATTLE_BC_OBJECT10_H */

@@ -284,7 +284,7 @@ void func_800C6D3C(s32 a0, s32 a1, s32 a2, s32 a3) {
 /**
  * @brief Set every screen tint to @p colour at @p level.
  *
- * @param level  How far each tint has come up; @ref func_800B9078 steps it.
+ * @param level  How far each tint has come up; @ref FadeBattleTintOut steps it.
  * @param colour The three colour bytes, written together as one word.
  */
 static void func_800C6DB4(s32 level, s32 colour) {

@@ -2,10 +2,96 @@
 #include "battle.h"
 #include "battle/bc_object9.h"
 #include "battle/bc_object10.h"
+#include "battle/bc_object13.h"
+#include "battle/bc_object14.h"
+
+typedef struct {
+    /* 0x00 */ u8 unk00;
+    /* 0x01 */ u8 active;
+    /* 0x02 */ s16 unk02;
+    /* 0x04 */ void (*finish)(s32 index);
+    /* 0x08 */ s16 slotIndex;
+} BattleActionState;
+
+typedef struct BattleActionTask {
+    /* 0x00 */ u8 unk00[12];
+    /* 0x0C */ u8 unk0C;
+    /* 0x0D */ u8 state;
+    /* 0x0E */ u16 unk0E;
+    /* 0x10 */ BattleActionState *action;
+} BattleActionTask;
+
+typedef struct {
+    /* 0x00 */ u8 unk00[12];
+    /* 0x0C */ s16 frame;
+    /* 0x0E */ s16 duration;
+} BattleTintFadeTask;
+
+typedef struct {
+    /* 0x00 */ SVECTOR rotation;
+    /* 0x08 */ SVECTOR eye;
+    /* 0x10 */ SVECTOR target;
+    /* 0x18 */ MATRIX matrix;
+} BattleCameraWorkspace;
+
+typedef struct {
+    /* 0x00 */ s8 active;
+    /* 0x01 */ u8 unk01[11];
+    /* 0x0C */ s16 frame;
+    /* 0x0E */ s16 duration;
+    /* 0x10 */ s16 *data;
+    /* 0x14 */ u8 unk14[1296];
+} BattleCameraTaskData;
+
+#define BATTLE_SLOT_COUNT 11
+typedef struct {
+    /* 0x00 */ u8 unk0;
+    /* 0x01 */ u8 active;
+    /* 0x02 */ u8 unk2[50];
+} BattleSlot;
+
+typedef struct BattleListNode {
+    /* 0x00 */ struct BattleListNode *next;
+    /* 0x04 */ s32 value;
+} BattleListNode;
+
+typedef struct {
+    /* 0x00 */ u8 unk0;
+    /* 0x01 */ u8 active;
+    /* 0x02 */ u8 unk2[10];
+} BattleListEntry;
+
+typedef struct {
+    /* 0x00 */ BattleListNode *pool;
+    /* 0x04 */ BattleListNode *head;
+    /* 0x08 */ BattleListEntry *entries;
+    /* 0x0C */ s16 count;
+    /* 0x0E */ s16 unkE;
+} BattleList;
+
+extern u8 D_800F0278[];
+extern u8 D_800EF7F8[];
+extern BattleCameraTaskData D_800EF828[2];
+extern BattleCameraTaskData *D_800F0288;
+extern s16 D_800F1A1C;
+extern u8 D_800F1A24;
+extern u8 D_800F1A2C;
+extern u8 D_800F02EC;
+
+extern SVECTOR D_800F02C0;
+extern s32 D_800F02F0;
+extern SVECTOR D_800E3D70;
+extern SVECTOR D_800E3D78;
+
+extern u8 D_800E3D2C[16];
+extern u8 D_800E3D3C[32];
+extern s16 D_800F0290[8];
+extern u16 D_800F02F4;
+extern u16 D_800F02E8;
 
 extern u8 D_800EF72C[];
 extern u8 D_800F05C8[];
-extern u8 D_800F0290[];
+
 extern u8 D_800F02F8[];
 extern u8 D_800F0308[];
 extern u8 D_800F0408[];
@@ -15,16 +101,42 @@ extern u8 D_800F085C[];
 extern u8 D_800F0830[];
 extern u8 D_800F1668[];
 extern u8 D_800E3DA8[];
-extern u8 D_800F05F0[];
+extern BattleSlot D_800F05F0[BATTLE_SLOT_COUNT];
 extern u8 D_800F0854[];
 extern u8 D_80170000[];
+
+static s32 CompleteBattleAction(BattleActionTask *task);
+static s32 FadeBattleTintOut(BattleTintFadeTask *task);
+s32 func_800B53F8(SVECTOR *eye, SVECTOR *target, MATRIX *matrix);
+static u32 RemapBattleStatusFlags(u16 persistent, u32 transient);
+static void BuildBattleCurveTangents(s16 *knots, s16 *values, float *tangents, s32 count);
+static s32 InterpolateBattleCurve(s16 value, s16 *knots, s16 *values, float *tangents, s32 count);
+BattleListEntry *func_800B8944(BattleListNode *pool, BattleListNode **head, BattleListEntry *entry);
+static BattleSlot *FindFreeBattleSlot(void);
+static BattleListEntry *FindFreeBattleListEntry(BattleList *list);
+static void RotateLinkedList(BattleListNode *pool, BattleListNode **head);
+
 
 void func_800B5B48(void);
 void func_800B8314(void);
 s32 func_8013E000(s32);
 void func_800C2B88(u8 *);
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B49D8);
+static s32 CompleteBattleAction(BattleActionTask *task) {
+    BattleActionState *action = task->action;
+    BattleEffectSlot *slot = &D_800EF2D0[action->slotIndex];
+
+    if (slot->flags & BATTLE_SLOT_FLAG_UNK02) {
+        if (func_800C5A34(slot, 26, 0x40) != 0) {
+            return 0;
+        }
+    }
+    if (action->finish != NULL) {
+        action->finish(action->slotIndex);
+    }
+    action->active = 255;
+    return 2;
+}
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B4A74);
 
@@ -55,7 +167,41 @@ void func_800B4DE8(s32 a0, s32 a1, s32 a2) {
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B4E54);
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B51F8);
+s32 BuildBattleDirectionBasis(VECTOR *input, MATRIX *matrix) {
+    VECTOR horizontal;
+    VECTOR vertical;
+    VECTOR direction;
+    s32 scale = 1;
+
+    direction.vx = input->vx;
+    direction.vy = input->vy;
+    direction.vz = input->vz;
+    while ((direction.vx < 0 ? -direction.vx : direction.vx) > 10000 ||
+           (direction.vy < 0 ? -direction.vy : direction.vy) > 10000 ||
+           (direction.vz < 0 ? -direction.vz : direction.vz) > 10000) {
+        scale *= 2;
+        direction.vx = (direction.vx & 1) + direction.vx / 2;
+        direction.vy = (direction.vy & 1) + direction.vy / 2;
+        direction.vz = (direction.vz & 1) + direction.vz / 2;
+    }
+    scale *= SquareRoot0(VectorNormal(&direction, &direction));
+    horizontal.vx = direction.vz;
+    horizontal.vy = 0;
+    horizontal.vz = -direction.vx;
+    VectorNormal(&horizontal, &horizontal);
+    OuterProduct12(&direction, &horizontal, &vertical);
+    VectorNormal(&vertical, &vertical);
+    matrix->m[0][0] = horizontal.vx;
+    matrix->m[0][1] = horizontal.vy;
+    matrix->m[0][2] = horizontal.vz;
+    matrix->m[1][0] = vertical.vx;
+    matrix->m[1][1] = vertical.vy;
+    matrix->m[1][2] = vertical.vz;
+    matrix->m[2][0] = direction.vx;
+    matrix->m[2][1] = direction.vy;
+    matrix->m[2][2] = direction.vz;
+    return scale;
+}
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B53F8);
 
@@ -93,7 +239,26 @@ s32 func_800B5528(s32 a0, s32 a1) {
     return ratan2(dx, dy);
 }
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B555C);
+static u32 RemapBattleStatusFlags(u16 persistent, u32 transient) {
+    u32 result = 0;
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+        if ((persistent >> i) & 1) {
+            if (D_800E3D2C[i] != 255) {
+                result |= 1U << D_800E3D2C[i];
+            }
+        }
+    }
+    for (i = 0; i < 32; i++) {
+        if (transient & (1U << i)) {
+            if (D_800E3D3C[i] != 255) {
+                result |= 1U << D_800E3D3C[i];
+            }
+        }
+    }
+    return result;
+}
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B5604);
 
@@ -161,7 +326,7 @@ void func_800B5C10(u8 *a0, s32 a1) {
 /**
  * @brief Compute sprite attributes and apply to entity.
  *
- * Calls func_800B555C with a 16-bit truncated a1 and a2, then
+ * Calls RemapBattleStatusFlags with a 16-bit truncated a1 and a2, then
  * combines the result with bits 24-25 from the entity's word at +8,
  * and passes it to func_800B5C10.
  *
@@ -170,7 +335,7 @@ void func_800B5C10(u8 *a0, s32 a1) {
  * @param a2 Second sprite parameter.
  */
 void func_800B5C70(s32 a0, s32 a1, s32 a2) {
-    s32 result = func_800B555C((u16)a1, a2);
+    s32 result = RemapBattleStatusFlags((u16)a1, a2);
     s32 val = *(s32 *)(a0 + 8) & 0x01800000;
     func_800B5C10(a0, val | result);
 }
@@ -221,9 +386,49 @@ INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B6764);
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B67D4);
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B6858);
+void MoveBattleCameraOutward(s32 distance) {
+    VECTOR *direction = func_800B3698(sizeof(VECTOR));
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B6954);
+    direction->vx = D_800E3D70.vx - D_800E3D78.vx;
+    direction->vy = D_800E3D70.vy - D_800E3D78.vy;
+    direction->vz = D_800E3D70.vz - D_800E3D78.vz;
+    VectorNormal(direction, direction);
+    D_800E3D70.vx += (direction->vx * distance) >> 12;
+    D_800E3D70.vy += (direction->vy * distance) >> 12;
+    D_800E3D70.vz += (direction->vz * distance) >> 12;
+    func_800B36B8(sizeof(VECTOR));
+}
+
+void UpdateBattleCameraMatrix(void) {
+    BattleCameraWorkspace *work;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    if (D_800F02A0 != 0) {
+        work = func_800B3698(sizeof(BattleCameraWorkspace));
+        work->rotation.vy = 0;
+        work->rotation.vx = 0;
+        work->rotation.vz = D_800F02A0;
+        RotMatrixYXZ(&work->rotation, &work->matrix);
+        ApplyMatrixSV(&work->matrix, &D_800E3D70, &work->eye);
+        ApplyMatrixSV(&work->matrix, &D_800E3D78, &work->target);
+        D_800F02F0 = func_800B53F8(&work->eye, &work->target, &D_800F02C8);
+        MulMatrix0(&D_800F02C8, &work->matrix, &D_800F02C8);
+        func_800B36B8(sizeof(BattleCameraWorkspace));
+    } else {
+        D_800F02F0 = func_800B53F8(&D_800E3D70, &D_800E3D78, &D_800F02C8);
+    }
+    x = D_800F02C8.t[0] + D_800F02C0.vx;
+    y = D_800F02C0.vy;
+    z = D_800F02C0.vz;
+    D_800F02C0.vz = 0;
+    D_800F02C0.vy = 0;
+    D_800F02C0.vx = 0;
+    D_800F02C8.t[0] = x;
+    D_800F02C8.t[1] += y;
+    D_800F02C8.t[2] += z;
+}
 
 /**
  * @brief Call func_800B3650 with D_800F02C8 as the argument.
@@ -258,7 +463,7 @@ INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B6C98);
  */
 s16 func_800B6D88(s32 a0) {
     if (a0 & 0x1000) {
-        return *(s16 *)(D_800F0290 + (a0 & 0xFFF) * 2);
+        return D_800F0290[a0 & 0xFFF];
     }
     return (s16)a0;
 }
@@ -275,7 +480,31 @@ INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B789C);
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B79B8);
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B7C48);
+void ResetBattleCameraTasks(void) {
+    s32 i;
+    s32 inactive;
+
+    func_800C3C00();
+    func_800B2A00(D_800F0278, D_800EF7F8, 16, 2);
+    inactive = -1;
+    for (i = 1; i >= 0; i--) {
+        D_800EF828[i].active = inactive;
+    }
+    for (i = 7; i >= 0; i--) {
+        D_800F0290[i] = 0;
+    }
+    D_800F02F4 = 0;
+    D_800F0288 = 0;
+    D_800F02E8 = ONE;
+    D_800F1A1C = 0;
+    D_800F1A24 = 0;
+    D_800F1A2C = 0;
+    D_800F02C0.vz = 0;
+    D_800F02C0.vy = 0;
+    D_800F02C0.vx = 0;
+    D_800F02A0 = 0;
+    D_800F02EC = 1;
+}
 
 /** @brief Raise @ref BATTLE_STATE_UNK100 when @p on, lower it otherwise. */
 void func_800B7D20(s32 on) {
@@ -286,13 +515,84 @@ void func_800B7D20(s32 on) {
     }
 }
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B7D58);
+static void BuildBattleCurveTangents(s16 *knots, s16 *values, float *tangents, s32 count) {
+    float intervals[32];
+    float slopes[32]; /* Reused for the diagonal during elimination. */
+    float factor;
+    s32 i;
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B7FD4);
+    tangents[0] = 0.0f;
+    tangents[count - 1] = 0.0f;
+    for (i = 0; i < count - 1; i++) {
+        intervals[i] = knots[i + 1] - knots[i];
+        slopes[i + 1] = (values[i + 1] - values[i]) / intervals[i];
+    }
+    tangents[1] = slopes[2] - slopes[1] - intervals[0] * tangents[0];
+    slopes[1] = 2 * (knots[2] - knots[0]);
+    for (i = 1; i < count - 2; i++) {
+        factor = intervals[i] / slopes[i];
+        tangents[i + 1] = slopes[i + 2] - slopes[i + 1] - tangents[i] * factor;
+        slopes[i + 1] = 2 * (knots[i + 2] - knots[i]) - intervals[i] * factor;
+    }
+    tangents[count - 2] -= intervals[count - 2] * tangents[count - 1];
+    for (i = count - 2; i > 0; i--) {
+        tangents[i] = (tangents[i] - intervals[i] * tangents[i + 1]) / slopes[i];
+    }
+}
+
+static s32 InterpolateBattleCurve(s16 value, s16 *knots, s16 *values,
+                        float *tangents, s32 count) {
+    s32 first = 0;
+    s32 last = count - 1;
+    s32 middle;
+    s32 knot;
+    s32 startValue;
+    s32 nextKnot;
+    s32 nextValue;
+    float duration;
+    float elapsed;
+    float firstTangent;
+    float lastTangent;
+    float curve;
+    float slope;
+
+    while (first < last) {
+        middle = (first + last) / 2;
+        if (knots[middle] < value) {
+            first = middle + 1;
+        } else {
+            last = middle;
+        }
+    }
+    if (first > 0) {
+        first--;
+    }
+    nextKnot = knots[first + 1];
+    knot = knots[first];
+    duration = nextKnot - knot;
+    elapsed = value - knot;
+    firstTangent = tangents[first];
+    lastTangent = tangents[first + 1];
+    curve = (lastTangent - firstTangent) * elapsed / duration;
+    curve = (curve + 3.0f * firstTangent) * elapsed;
+    nextValue = values[first + 1];
+    startValue = values[first];
+    slope = (nextValue - startValue) / duration;
+    curve += slope - (firstTangent + firstTangent + lastTangent) * duration;
+    return curve * elapsed + startValue;
+}
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B81B4);
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B8248);
+SVECTOR *InterpolateBattleVector(s16 value, s16 *knots,
+                                s16 *valuesX, s16 *valuesY, s16 *valuesZ,
+                                s32 count, float *tangentsX, float *tangentsY,
+                                float *tangentsZ, SVECTOR *result) {
+    result->vx = InterpolateBattleCurve(value, knots, valuesX, tangentsX, count);
+    result->vy = InterpolateBattleCurve(value, knots, valuesY, tangentsY, count);
+    result->vz = InterpolateBattleCurve(value, knots, valuesZ, tangentsZ, count);
+    return result;
+}
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B8314);
 
@@ -358,30 +658,27 @@ void func_800B86C0(u8 *a0, u8 *a1, u8 *a2, s32 a3) {
     }
 }
 
-
 void func_800B8BEC(void);
-void func_800B9078(void);
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B872C);
 
+static BattleListEntry *FindFreeBattleListEntry(BattleList *list) {
+    s32 i;
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B8754);
+    for (i = 0; i < list->count; i++) {
+        if (list->entries[i].active == 0) {
+            return &list->entries[i];
+        }
+    }
+    return NULL;
+}
 
-/**
- * @brief Check availability and register entity with tag byte.
- *
- * Calls func_800B8754 to check availability. If non-zero, calls
- * func_800B8944 with the word at a0, a0+4, and the return value,
- * then stores a1 as a byte at offset 1 of the result.
- *
- * @param a0 Pointer to entity data.
- * @param a1 Tag byte to store at result offset 1.
- */
-void func_800B8798(s32 *a0, s32 a1) {
-    s32 val = func_800B8754();
-    if (val != 0) {
-        u8 *result = (u8 *)func_800B8944(*a0, (s32)a0 + 4, val);
-        result[1] = a1;
+void func_800B8798(BattleList *list, s32 tag) {
+    BattleListEntry *entry = FindFreeBattleListEntry(list);
+
+    if (entry != NULL) {
+        BattleListEntry *result = func_800B8944(list->pool, &list->head, entry);
+        result->active = tag;
     }
 }
 
@@ -394,13 +691,8 @@ void func_800B87E4(s32 *a0) {
     func_800B8B28(*a0, (s32)a0 + 4, 1);
 }
 
-/**
- * @brief Unpack a pointer pair and call func_800B8B98.
- *
- * @param a0 Pointer to a structure with a word at +0 and data at +4.
- */
-void func_800B8810(s32 *a0) {
-    func_800B8B98(*a0, (s32)a0 + 4);
+void func_800B8810(BattleList *list) {
+    RotateLinkedList(list->pool, &list->head);
 }
 
 /**
@@ -528,10 +820,25 @@ s32 func_800B8B60(s32 a0, s32 *a1) {
     return count;
 }
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B8B98);
+static void RotateLinkedList(BattleListNode *pool, BattleListNode **head) {
+    BattleListNode *first;
+    BattleListNode *node;
+
+    node = *head;
+    if (node != NULL) {
+        first = node->next;
+        if (first != NULL) {
+            node->next = first->next;
+            first->next = NULL;
+            do {
+                head = &(*head)->next;
+            } while (*head != NULL);
+            *head = first;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B8BEC);
-
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B8C6C);
 
@@ -585,7 +892,6 @@ void func_800B8F98(s32 a0) {
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B8FE4);
 
-
 /**
  * @brief Initialize sound entry fields if D_800E3DA8 pointer is non-null.
  *
@@ -607,7 +913,19 @@ void func_800B9048(s32 a0) {
     }
 }
 
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B9078);
+static s32 FadeBattleTintOut(BattleTintFadeTask *task) {
+    s32 level;
+    s32 i;
+    s32 complete;
+
+    level = (task->frame << 12) / task->duration;
+    level = rsin((4096 - level) / 4);
+    for (i = 3; i >= 0; i--) {
+        D_800EF738[i].level = level;
+    }
+    complete = (task->frame++ >= task->duration) * 2;
+    return complete;
+}
 
 /**
  * @brief Black out the screen tint and start the task that animates it.
@@ -628,9 +946,9 @@ void func_800B9114(s32 a0) {
         tint++;
     }
     {
-        u8 *result = func_800B2C58(func_800B9078);
-        *(u16 *)(result + 0xC) = 0;
-        *(u16 *)(result + 0xE) = a0;
+        BattleTintFadeTask *task = func_800B2C58(FadeBattleTintOut);
+        task->frame = 0;
+        task->duration = a0;
     }
 }
 
@@ -676,7 +994,16 @@ s32 func_800B91CC(void) {
  *
  * @return Pointer to free slot, or 0 if none found.
  */
-INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B91E4);
+static BattleSlot *FindFreeBattleSlot(void) {
+    s32 i;
+
+    for (i = 0; i < BATTLE_SLOT_COUNT; i++) {
+        if (D_800F05F0[i].active == 0) {
+            return &D_800F05F0[i];
+        }
+    }
+    return NULL;
+}
 
 INCLUDE_ASM("asm/ovl/battle/nonmatchings/bc_object10", func_800B921C);
 
