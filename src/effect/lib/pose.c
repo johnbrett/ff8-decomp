@@ -278,7 +278,7 @@ emit:
  *       with a @c break costs an instruction, because the frame comparison the
  *       walk falls out to is then on the path.
  */
-s32 effectPoseWalk(s32 *pose, EffectPartFn fn, EffectDrawRequest *req) {
+s32 effectPoseWalk(s32 *pose, EffectPartFn fn, void *req) {
     EffectPartPose part;
     s32 *cursor;
     s32 *script;

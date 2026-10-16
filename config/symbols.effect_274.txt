@@ -1,0 +1,1 @@
+DrawDuelScreenBorders = 0x801A7AC8; // type:func

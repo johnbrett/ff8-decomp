@@ -3,6 +3,19 @@
  * @brief Draw
  */
 #include "common.h"
+#include "psxsdk/libgte.h"
+
+typedef struct {
+    /* 0x000 */ u8 unk000[0x1C];
+    /* 0x01C */ SVECTOR position;
+    /* 0x024 */ u8 unk024[0x60 - 0x24];
+    /* 0x060 */ MATRIX rotation;
+    /* 0x080 */ SVECTOR end;
+    /* 0x088 */ SVECTOR start;
+    /* 0x090 */ SVECTOR history[11];
+    /* 0x0E8 */ u8 unk0E8[0x124 - 0xE8];
+    /* 0x124 */ s16 frame;
+} EffectArcTrail;
 
 INCLUDE_ASM("asm/ovl/effect_015/nonmatchings/effect_015", func_801A0000);
 
@@ -229,7 +242,32 @@ void func_801A9850(void) {
 
 INCLUDE_ASM("asm/ovl/effect_015/nonmatchings/effect_015", func_801A9858);
 
-INCLUDE_ASM("asm/ovl/effect_015/nonmatchings/effect_015", func_801A9928);
+static void StepEffectArcTrail(EffectArcTrail *trail) {
+    SVECTOR offset;
+    SVECTOR rotated;
+    s32 frame = trail->frame;
+    s32 x;
+    s32 y;
+    s32 z;
+    s16 angle;
+
+    trail->position = trail->start;
+    x = (trail->end.vx - trail->start.vx) * trail->frame / 10;
+    y = (trail->end.vy - trail->start.vy) * trail->frame / 10;
+    z = (trail->end.vz - trail->start.vz) * trail->frame / 10;
+    trail->position.vx += x;
+    trail->position.vy += y;
+    trail->position.vz += z;
+    angle = frame * 204;
+    offset.vx = 0;
+    offset.vy = rsin(angle) / 3;
+    offset.vz = 0;
+    ApplyMatrixSV(&trail->rotation, &offset, &rotated);
+    trail->position.vx += rotated.vx;
+    trail->position.vy += rotated.vy;
+    trail->position.vz += rotated.vz;
+    trail->history[trail->frame] = trail->position;
+}
 
 INCLUDE_ASM("asm/ovl/effect_015/nonmatchings/effect_015", func_801A9ADC);
 

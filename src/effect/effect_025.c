@@ -47,10 +47,11 @@
  *
  * @param pose The pose script and its current frame.
  * @param part The part as the pose walk left it.
- * @param req  Draw state: the parent matrix, the per-part colours and flags.
+ * @param data Draw state: the parent matrix, the per-part colours and flags.
  */
 static void func_801A6A00(s32 *pose, EffectPartPose *part,
-                          EffectDrawRequest *req) {
+                          void *data) {
+    EffectDrawRequest *req = data;
     EffectPrimBuild *prim;
     EffectVertexAnim *anim;
     MATRIX m;

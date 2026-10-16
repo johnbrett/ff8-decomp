@@ -3,6 +3,20 @@
  * @brief Quezacotl Summon (Thunder Storm)
  */
 #include "common.h"
+#include "battle.h"
+#include "psxsdk/libgpu.h"
+
+/* Word-sized colour fields preserve the original packet stores. */
+typedef struct {
+    /* 0x00 */ u32 tag;
+    /* 0x04 */ u32 colour;
+    /* 0x08 */ DVECTOR xy0;
+    /* 0x0C */ DVECTOR xy1;
+    /* 0x10 */ DVECTOR xy2;
+    /* 0x14 */ DVECTOR xy3;
+} ScreenTintQuad;
+
+extern void *D_801B17FC;
 
 INCLUDE_ASM("asm/ovl/effect_116/nonmatchings/effect_116", func_80190000);
 
@@ -102,7 +116,31 @@ INCLUDE_ASM("asm/ovl/effect_116/nonmatchings/effect_116", func_80194D74);
 
 INCLUDE_ASM("asm/ovl/effect_116/nonmatchings/effect_116", func_80194DB8);
 
-INCLUDE_ASM("asm/ovl/effect_116/nonmatchings/effect_116", func_80194E4C);
+static void DrawFullScreenTint(u32 *colour) {
+    DR_TPAGE *mode;
+    ScreenTintQuad *quad;
+
+    mode = D_801B17FC;
+    D_801B17FC = mode + 1;
+    setlen(mode, 1);
+    mode->code[0] = 0xE10002A0;
+    addPrim(&D_800FA5E8->frontOT[3], mode);
+    quad = D_801B17FC;
+    D_801B17FC = quad + 1;
+    quad->xy1.vx = quad->xy3.vx = 320;
+    quad->xy2.vx = quad->xy0.vx = 0;
+    quad->xy0.vy = quad->xy1.vy = 0;
+    quad->xy2.vy = quad->xy3.vy = 216;
+    quad->colour = *colour;
+    setlen(quad, 5);
+    setcode(quad, 0x2A);
+    addPrim(&D_800FA5E8->frontOT[3], quad);
+    mode = D_801B17FC;
+    D_801B17FC = mode + 1;
+    setlen(mode, 1);
+    mode->code[0] = 0xE10002C0;
+    addPrim(&D_800FA5E8->frontOT[3], mode);
+}
 
 INCLUDE_ASM("asm/ovl/effect_116/nonmatchings/effect_116", func_80194F7C);
 
