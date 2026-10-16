@@ -2,7 +2,6 @@
 #include "sound.h"
 #include "snd_dma.h"
 
-extern volatile s32 D_80074ED4;
 extern s32 D_80074E88;
 extern u8 D_800516B8[];
 extern s32 D_8005169C;

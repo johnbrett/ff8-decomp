@@ -37,4 +37,6 @@ extern void spuSetVoiceSustainLevel(s32 voice, u32 a1);
 extern void spuSetVoiceSustainMode(s32 voice, u32 a1, u32 a2);
 extern void spuSetVoiceReleaseMode(s32 voice, u32 a1, u32 a2);
 
+extern volatile s32 D_80074ED4;
+
 #endif /* SND_DMA_H */

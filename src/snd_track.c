@@ -1,10 +1,20 @@
 #include "common.h"
 #include "sound.h"
+#include "snd_dma.h"
+#include "psxsdk/libspu.h"
 
 extern s32 D_80075028[];
 extern s32 D_80077288[];
 extern s32 D_80074EE8[];
 extern u8 D_80051824;
+extern s32 D_80074EB0;
+static void AdvanceStreamDma(s32 size, s32 irqAddr, void (*callback)(void));
+static void TransferStreamChunk(s32 leftAddr, s32 rightAddr, s32 size, void (*callback)(void));
+static void SetupStreamDma(void);
+static void AdvanceAltStreamDma(s32 size, s32 irqAddr, void (*callback)(void));
+void func_8001E308(s32 voice, s32 value, s32 start, s32 repeat);
+void func_8003E494(void (*callback)(void));
+void func_8003E3A4(s32 source, s32 size);
 
 void sndStreamSetupMono(void);
 void sndStreamCallbackMonoLow(void);
@@ -322,7 +332,7 @@ void sndTrackReadInstrumentTransposed(SoundSeqTrack *track) {
     *(u8 **)track = ptr + 1;
 
     if (track->voiceActive == 0) {
-        inst = sndAdjustNoteOctave(g_sndSeqState->field00, byte);
+        inst = sndAdjustNoteOctave(g_sndSeqState->field00.value, byte);
     } else {
         inst = sndTrackTransposePercussion(track->bankPtr, byte);
     }
@@ -347,7 +357,7 @@ void sndTrackReadInstrument(SoundSeqTrack *track) {
     s32 byte = *ptr;
     s32 inst;
     *(u8 **)track = ptr + 1;
-    inst = sndAdjustNoteOctave(bankPtr->field00, byte);
+    inst = sndAdjustNoteOctave(bankPtr->field00.value, byte);
     sndTrackSetInstrumentParams(track, &D_80073E68[inst], 0x1010);
     track->instrument = inst;
     track->instOverride = 0;
@@ -1188,7 +1198,25 @@ INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001E0CC);
 
 INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001E308);
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001E4C4);
+static void AdvanceStreamDma(s32 size, s32 irqAddr, void (*callback)(void)) {
+    SoundStream *stream = &g_sndStream;
+    if (stream->active != 0) {
+        func_8003E494(NULL);
+        D_80074ED4 = 0;
+        if (stream->transferBytes > 4096) {
+            stream->transferBytes -= 4096;
+            stream->spuBaseAddr += size;
+            SpuSetIRQCallback(callback);
+        } else {
+            SpuSetIRQCallback(sndStreamDisableIrq);
+            irqAddr = 0x1030;
+            stream->transferBytes = 0;
+        }
+        SpuSetIRQAddr(irqAddr + 0x8);
+        spuSetReverbWorkAddr(g_sndStream.active);
+        SpuSetIRQ(1);
+    }
+}
 
 /**
  * @brief Sets up SPU voice parameters for both channels, then registers
@@ -1198,7 +1226,7 @@ void sndStreamSetupMono(void) {
     SoundStream *base = &g_sndStream;
     func_8001E308(base->voiceIdx, 0, 0x1100, 0x2100);
     func_8001E308(base->voiceIdx + 1, 0, 0x1100, 0x2100);
-    func_8001E4C4(0x1000, 0x2100, sndStreamCallbackMonoLow);
+    AdvanceStreamDma(0x1000, 0x2100, sndStreamCallbackMonoLow);
 }
 
 /**
@@ -1209,33 +1237,59 @@ void sndStreamSetupStereo(void) {
     SoundStream *base = &g_sndStream;
     func_8001E308(base->voiceIdx, 1, 0x1100, 0x2100);
     func_8001E308(base->voiceIdx + 1, 2, 0x1900, 0x2900);
-    func_8001E4C4(0x2000, 0x2100, sndStreamCallbackStereoLow);
+    AdvanceStreamDma(0x2000, 0x2100, sndStreamCallbackStereoLow);
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001E65C);
+static void TransferStreamChunk(s32 leftAddr, s32 rightAddr, s32 size, void (*callback)(void)) {
+    SoundStream *stream = &g_sndStream;
+    if (stream->active != 0 && stream->transferBytes != 0) {
+        SpuSetTransferStartAddr(leftAddr);
+        sndDmaSetActive();
+        func_8003E3A4(stream->spuBaseAddr, size);
+        SpuSetIRQ(0);
+        if (stream->transferBytes > 2048) {
+            SpuSetIRQCallback(callback);
+            stream->transferBytes -= 2048;
+            stream->spuBaseAddr += size;
+        } else if (stream->unk04 != 0) {
+            SpuSetIRQCallback(callback);
+            stream->spuBaseAddr = stream->unk04;
+            stream->transferBytes = stream->unk1C;
+        } else {
+            SpuSetIRQCallback(sndStreamDisableIrq);
+            rightAddr = 0x1030;
+            leftAddr = rightAddr;
+            stream->transferBytes = 0;
+        }
+        spuSetVoiceRepeatAddr(g_sndStream.voiceIdx, leftAddr);
+        spuSetVoiceRepeatAddr(g_sndStream.voiceIdx + 1, rightAddr);
+        SpuSetIRQAddr(leftAddr + 0x8);
+        SpuSetIRQ(1);
+    }
+}
 
 void sndStreamCallbackMonoHigh(void);
 
-/** @brief Calls func_8001E65C with SPU transfer params (0x1100, 0x1100, 0x800) and callback sndStreamCallbackMonoHigh. */
+/** @brief Calls TransferStreamChunk with SPU transfer params (0x1100, 0x1100, 0x800) and callback sndStreamCallbackMonoHigh. */
 void sndStreamCallbackMonoLow(void) {
-    func_8001E65C(0x1100, 0x1100, 0x800, sndStreamCallbackMonoHigh);
+    TransferStreamChunk(0x1100, 0x1100, 0x800, sndStreamCallbackMonoHigh);
 }
 
-/** @brief Calls func_8001E65C with SPU transfer params (0x2100, 0x2100, 0x800) and callback sndStreamCallbackMonoLow. */
+/** @brief Calls TransferStreamChunk with SPU transfer params (0x2100, 0x2100, 0x800) and callback sndStreamCallbackMonoLow. */
 void sndStreamCallbackMonoHigh(void) {
-    func_8001E65C(0x2100, 0x2100, 0x800, sndStreamCallbackMonoLow);
+    TransferStreamChunk(0x2100, 0x2100, 0x800, sndStreamCallbackMonoLow);
 }
 
 void sndStreamCallbackStereoHigh(void);
 
-/** @brief Calls func_8001E65C with SPU transfer params (0x1100, 0x1900, 0x1000) and callback sndStreamCallbackStereoHigh. */
+/** @brief Calls TransferStreamChunk with SPU transfer params (0x1100, 0x1900, 0x1000) and callback sndStreamCallbackStereoHigh. */
 void sndStreamCallbackStereoLow(void) {
-    func_8001E65C(0x1100, 0x1900, 0x1000, sndStreamCallbackStereoHigh);
+    TransferStreamChunk(0x1100, 0x1900, 0x1000, sndStreamCallbackStereoHigh);
 }
 
-/** @brief Calls func_8001E65C with SPU transfer params (0x2100, 0x2900, 0x1000) and callback sndStreamCallbackStereoLow. */
+/** @brief Calls TransferStreamChunk with SPU transfer params (0x2100, 0x2900, 0x1000) and callback sndStreamCallbackStereoLow. */
 void sndStreamCallbackStereoHigh(void) {
-    func_8001E65C(0x2100, 0x2900, 0x1000, sndStreamCallbackStereoLow);
+    TransferStreamChunk(0x2100, 0x2900, 0x1000, sndStreamCallbackStereoLow);
 }
 
 /**
@@ -1284,7 +1338,25 @@ void sndStreamSetupIrq(void) {
     SpuSetIRQCallback(sndStreamDisableIrq);
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001EB38);
+static void SetupStreamDma(void) {
+    SoundStream *stream;
+    s32 irqAddr;
+    u32 size = g_sndStream.transferBytes;
+    if (size > 8192) {
+        SpuSetTransferStartAddr(g_sndStream.unk2C + 0x2000);
+        sndDmaWriteSpu(g_sndStream.spuBaseAddr, g_sndStream.transferBytes - 8192);
+        irqAddr = g_sndStream.unk2C + 0x1FF8;
+    } else {
+        irqAddr = g_sndStream.unk2C + (size >> 1) + 8;
+    }
+    stream = &g_sndStream;
+    func_8001E308(stream->voiceIdx, 0, stream->unk2C, 0x1030);
+    func_8001E308(stream->voiceIdx + 1, 0, stream->unk2C, 0x1030);
+    SpuSetIRQAddr(irqAddr);
+    SpuSetIRQCallback(sndStreamSetupIrq);
+    spuSetReverbWorkAddr(stream->active);
+    SpuSetIRQ(1);
+}
 
 INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001EC0C);
 
@@ -1331,17 +1403,33 @@ s32 sndStreamAdvanceLoopCounter(s32 *counter) {
 
 INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001F118);
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001F2A8);
+static void AdvanceAltStreamDma(s32 size, s32 irqAddr, void (*callback)(void)) {
+    SoundStream *stream = &g_sndStream;
+    if (stream->active != 0) {
+        func_8003E494(NULL);
+        D_80074ED4 = 0;
+        if (stream->transferBytes > 3360) {
+            stream->spuBaseAddr += size;
+            SpuSetIRQCallback(callback);
+        } else {
+            SpuSetIRQCallback(sndStreamDisableIrq);
+            irqAddr = 0x1030;
+        }
+        SpuSetIRQAddr(irqAddr + 0x8);
+        spuSetReverbWorkAddr(g_sndStream.active);
+        SpuSetIRQ(1);
+    }
+}
 
 /**
  * @brief Sets up SPU voice parameters for dual-channel streaming, then calls
- *        func_8001F2A8 with callback sndStreamCallbackStereoAltLow.
+ *        AdvanceAltStreamDma with callback sndStreamCallbackStereoAltLow.
  */
 void sndStreamSetupStereoAlt(void) {
     SoundStream *base = &g_sndStream;
     func_8001E308(base->voiceIdx, 1, 0x1100, 0x2100);
     func_8001E308(base->voiceIdx + 1, 2, 0x1900, 0x2900);
-    func_8001F2A8(0x2000, 0x2100, sndStreamCallbackStereoAltLow);
+    AdvanceAltStreamDma(0x2000, 0x2100, sndStreamCallbackStereoAltLow);
 }
 
 INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001F3D4);

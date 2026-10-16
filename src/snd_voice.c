@@ -1,7 +1,12 @@
 #include "common.h"
 #include "sound.h"
 
+static void CollectSequenceVoiceMask(s32 *result, s32 secondaryMask, s32 primaryMask, s32 extraVoices);
+
 extern u8 D_80073CB0[];
+extern s32 D_80077288[];
+extern s32 D_80075028[];
+extern s32 D_800772A4;
 
 void sndReleaseVoice(s32 a0);
 
@@ -124,10 +129,6 @@ s32 sndAllocVoice(void) {
 
 INCLUDE_ASM("asm/nonmatchings/snd_voice", func_80015FE0);
 
-extern u8 D_80070D60[];
-extern s32 D_80073CA8;
-extern u8 *D_80073C34;
-
 /**
  * @brief Releases a voice from all active sequence tracks.
  *
@@ -206,7 +207,7 @@ extern s32 D_80074F1C;
  * @param a0 Pointer to a sequence track structure.
  */
 void sndStoreTrackTiming(u8 *a0) {
-    ((SoundSeqTrack *)a0)->timing = D_80074F1C;
+    ((SoundSeqTrack *)a0)->timing.word = D_80074F1C;
 }
 
 INCLUDE_ASM("asm/nonmatchings/snd_voice", func_800164D8);
@@ -223,19 +224,19 @@ INCLUDE_ASM("asm/nonmatchings/snd_voice", func_800164D8);
  * @param trackMask Bitmask of tracks to check.
  * @param finalMask AND mask applied to the result after accumulation.
  */
-void func_80016A1C(u8 *tracks, s32 *resultPtr, s32 trackMask, s32 finalMask) {
+void func_80016A1C(SoundSeqTrack *tracks, s32 *resultPtr, s32 trackMask, s32 finalMask) {
     s32 bit = 1;
     s32 one = 1;
 
     do {
         if (trackMask & bit) {
-            s32 voice = ((SoundSeqTrack *)tracks)->voiceMask;
-            if ((u32)voice < 0x18) {
+            s32 voice = tracks->voiceMask;
+            if ((u32)voice < 24) {
                 *resultPtr |= one << voice;
             }
         }
         trackMask &= ~bit;
-        tracks += 0x110;
+        tracks++;
         bit <<= 1;
     } while (trackMask != 0);
 
@@ -244,5 +245,31 @@ void func_80016A1C(u8 *tracks, s32 *resultPtr, s32 trackMask, s32 finalMask) {
 
 INCLUDE_ASM("asm/nonmatchings/snd_voice", func_80016A7C);
 
-INCLUDE_ASM("asm/nonmatchings/snd_voice", func_80016C28);
+static void CollectSequenceVoiceMask(s32 *result, s32 secondaryMask, s32 primaryMask, s32 extraVoices) {
+    s32 secondary = 0;
+    s32 primary;
+    s32 available = ~(D_80075028[0] | D_80075028[4] | D_800772A4);
+    s32 voices = 0;
+    if (D_80073CA8 != 0) {
+        secondary = D_80073CA8->instParams & secondaryMask;
+        if (secondary & D_80073CA8->field08) {
+            func_80016A1C(D_80073C34, &voices, secondary & D_80073CA8->field08, available);
+            secondary &= ~D_80073CA8->field08;
+        }
+    }
+    primary = g_sndSeqState->instParams & primaryMask;
+    if (primary & g_sndSeqState->field08) {
+        func_80016A1C(D_80070D60, &voices, primary & g_sndSeqState->field08, available);
+        primary &= ~g_sndSeqState->field08;
+    }
+    if (D_80073CA8 != 0 && secondary != 0) {
+        func_80016A1C(D_80073C34, &voices, secondary, available);
+    }
+    if (primary != 0) {
+        func_80016A1C(D_80070D60, &voices, primary, available);
+    }
+    voices |= extraVoices;
+    *result = voices;
+    D_80077288[2] |= 0x100;
+}
 

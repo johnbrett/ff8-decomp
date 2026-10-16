@@ -1,5 +1,6 @@
 #include "common.h"
 #include "sound.h"
+#include "snd_bank.h"
 
 extern s16 D_8007507A;
 /**
@@ -30,9 +31,8 @@ typedef struct {
 } UnkStruct80074F10;
 
 extern UnkStruct80074F10 D_80074F10;
-extern void func_80017D14(SoundSeqTrack *seq, s32 *tracks);
 
-void func_8001ACCC(SoundSeqTrack *track, s32 *tracks) {
+void func_8001ACCC(SoundSeqTrack *track, SoundSeqTrack *tracks) {
     s32 savedUnk04;
     s32 newVal;
 

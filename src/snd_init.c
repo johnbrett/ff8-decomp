@@ -101,9 +101,9 @@ s32 sndStopAll(void) {
  */
 s32 sndGetStatus(void) {
     SoundSeqTrack *ptr = g_sndSeqState;
-    s32 *ptr2 = D_80073CA8;
+    SoundSeqTrack *ptr2 = D_80073CA8;
     s32 result = ptr->instParams != 0;
-    if (ptr2 != 0 && ptr2[1] != 0) {
+    if (ptr2 != 0 && ptr2->instParams != 0) {
         result |= 2;
     }
     return result;
@@ -114,7 +114,7 @@ s32 sndGetStatus(void) {
  * @brief Compute the maximum volume from multiple sound sources.
  *
  * Combines volume values from up to three sources based on the bitmask
- * in @p mask. Bit 0: use g_sndSeqState->pitchValue as initial volume. Bit 1: clamp
+ * in @p mask. Bit 0: use g_sndSeqState->pitchValue.word as initial volume. Bit 1: clamp
  * up to D_80073E62. Bit 2: clamp up to D_80073E60.
  *
  * @param mask Bitmask selecting which volume sources to consider.
@@ -123,7 +123,7 @@ s32 sndGetStatus(void) {
 s32 sndGetMaxVolume(s32 mask) {
     s32 vol = 0;
     if (mask & 1) {
-        vol = (s16)g_sndSeqState->pitchValue;
+        vol = (s16)g_sndSeqState->pitchValue.word;
     }
     if (mask & 2) {
         s32 v = D_80073E62;
@@ -798,7 +798,7 @@ s32 sndSelectBankSlot(SndBankDesc *desc, s32 *outLevel, s32 *outAddr) {
     D_80077288[0] = ctrl & ~0x10;
 
     if (seq->instParams == 0) {
-        seq->field00 &= ~0x600;
+        seq->field00.value &= ~0x600;
     }
 
     flag = 0;
@@ -806,7 +806,7 @@ s32 sndSelectBankSlot(SndBankDesc *desc, s32 *outLevel, s32 *outAddr) {
         sndCmd11(0);
         D_80077288[1] &= ~0x10000;
     } else {
-        s32 f = g_sndSeqState->field00;
+        s32 f = g_sndSeqState->field00.value;
         if ((f & 0x200) || (!(f & 0x400) && (D_80077288[1] & 0x10000))) {
             flag = 1;
             D_80077288[1] &= ~0x10000;
@@ -1014,7 +1014,7 @@ s32 sndUploadBank(SndBankDesc *desc, s32 arg1) {
 void sndSetPlaybackAddr(s32 arg0, s32 arg1) {
     SoundSeqTrack *ptr = g_sndSeqState;
     s32 addr = 0x5D000;
-    if ((ptr->instParams | ptr->keyOnPending) && (ptr->field00 & 0x400)) {
+    if ((ptr->instParams | ptr->keyOnPending) && (ptr->field00.value & 0x400)) {
         addr = 0x3D000;
     }
     func_800148B0(arg0, arg1, 0xB0, addr);
@@ -1071,7 +1071,7 @@ void func_80014094(SndBankDesc *desc, s32 mode, s32 arg2) {
     /* Read field00 through the loop pointer q (it is dead here); reusing it
        keeps q live past the loop, which is what pins the loop's counter to
        $a3 and the array pointer to $t0 to match the original codegen. */
-    q = &ptr->field00;
+    q = &ptr->field00.value;
     if ((ptr->instParams | ptr->keyOnPending) && (*q & 0x400)) {
         addr -= 0x20000;
     }
@@ -1237,7 +1237,7 @@ s32 sndUploadSampleBank(s32 bank, s32 slot) {
             /* slot = bank is set in both branches below rather than hoisted after
                the if: the original stores the descriptor pointer twice, and
                collapsing it to a single assignment drops the match. */
-            if ((ptr->instParams | ptr->keyOnPending) && (ptr->field00 & 0x400)) {
+            if ((ptr->instParams | ptr->keyOnPending) && (ptr->field00.value & 0x400)) {
                 spuAddr -= 0x20000;
                 slot = bank;
             } else {
@@ -1289,7 +1289,7 @@ void sndCmdEC(s32 bank, s32 instrument, s32 slot, s32 arg3) {
             spuAddr = 0x4B000;
         }
         ptr = g_sndSeqState;
-        if ((ptr->instParams | ptr->keyOnPending) && (ptr->field00 & 0x400)) {
+        if ((ptr->instParams | ptr->keyOnPending) && (ptr->field00.value & 0x400)) {
             spuAddr -= 0x20000;
         }
         g_sndCmdArgs[0] = bank;

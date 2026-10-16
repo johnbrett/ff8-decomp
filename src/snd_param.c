@@ -1,14 +1,13 @@
 #include "common.h"
 #include "sound.h"
+#include "snd_bank.h"
 
 extern s32 D_80075028;
 extern u16 D_80073E62;
 extern s32 D_80077284;
 extern u16 D_80073E60;
 extern s32 D_80077280;
-extern u8 D_80070D60[];
-extern s32 D_80073CA8;
-extern u8 *D_80073C34;
+extern s32 D_80077288[];
 extern s32 D_8007728C;
 extern s32 D_800772A4;
 extern s32 D_800772F4;
@@ -45,28 +44,28 @@ INCLUDE_ASM("asm/nonmatchings/snd_param", func_80019A94);
 /**
  * @brief Transfers sound data for main and optional secondary sound sources.
  *
- * Calls func_80017410 for the primary sound source (g_sndSeqState with D_80070D60),
+ * Calls StopSequence for the primary sound source (g_sndSeqState with D_80070D60),
  * then conditionally for a secondary source (D_80073CA8 with D_80073C34) if set.
  */
 void sndTransferData(void) {
-    func_80017410(g_sndSeqState, D_80070D60, 0);
+    StopSequence(g_sndSeqState, D_80070D60, 0);
     if (D_80073CA8 != 0) {
-        func_80017410(D_80073CA8, D_80073C34, 0);
+        StopSequence(D_80073CA8, D_80073C34, 0);
     }
 }
 
 /**
  * @brief Transfers sound data with a given mode for primary and optional secondary sources.
  *
- * Calls func_80017410 for the primary sound source with the mode from *a0.
+ * Calls StopSequence for the primary sound source with the mode from *a0.
  * If both D_80073CA8 and *a0 are non-zero, also calls for the secondary source.
  *
  * @param a0 Pointer to the transfer mode value.
  */
 void sndTransferDataWithMode(s32 *a0) {
-    func_80017410(g_sndSeqState, D_80070D60, *a0);
+    StopSequence(g_sndSeqState, D_80070D60, *a0);
     if (D_80073CA8 != 0 && *a0 != 0) {
-        func_80017410(D_80073CA8, D_80073C34, *a0);
+        StopSequence(D_80073CA8, D_80073C34, *a0);
     }
 }
 
@@ -186,7 +185,28 @@ void func_80019DB0(void) {
  * Moves the mask from field 0x1C to field 0x04 and sets the hardware
  * update flag. Clears bit 0 of D_800772F4.
  */
-INCLUDE_ASM("asm/nonmatchings/snd_param", func_80019EA0);
+void ResumeSequenceVoices(void) {
+    s32 mask;
+    s32 bit;
+    SoundSeqTrack *track;
+    if (g_sndSeqState->keyOnPending != 0) {
+        mask = g_sndSeqState->keyOnPending;
+        bit = 1;
+        track = D_80070D60;
+        do {
+            if (mask & bit) {
+                track->updateFlags |= 0x2B13;
+                mask &= ~bit;
+            }
+            bit <<= 1;
+            track++;
+        } while (mask != 0);
+        g_sndSeqState->instParams = g_sndSeqState->keyOnPending;
+        g_sndSeqState->keyOnPending = 0;
+        D_80077288[2] |= 0x100;
+    }
+    D_800772F4 &= ~0x1;
+}
 
 /**
  * @brief Silences CD-audio voices and clears pending voice bits.

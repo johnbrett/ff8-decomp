@@ -1512,3 +1512,17 @@ g_ovlCmdQueue = 0x80085168;
 g_biosPadEnableFn = 0x8008CB68; // type:u32 BIOS pad-enable entry set by _patch_pad, EnablePAD jumps through it
 g_biosPadDisableFn = 0x8008CB6C; // type:u32 BIOS pad-disable entry set by _patch_pad, DisablePAD jumps through it
 g_kernelFileDesc = 0x80097800; // master file table entry 128, kernel.bin
+
+CollectSequenceVoiceMask = 0x80016C28; // type:func
+StopSequence = 0x80017410; // type:func
+SaveAndStartSequence = 0x80018358; // type:func
+SetSequenceVolume = 0x80018A74; // type:func
+FadeSequenceVolumeFrom = 0x80018C48; // type:func
+SetSfxExpression = 0x80018E4C; // type:func
+func_800191F8 = 0x800191F8; // type:func
+func_8001958C = 0x8001958C; // type:func
+ResumeSequenceVoices = 0x80019EA0; // type:func
+AdvanceStreamDma = 0x8001E4C4; // type:func
+TransferStreamChunk = 0x8001E65C; // type:func
+SetupStreamDma = 0x8001EB38; // type:func
+AdvanceAltStreamDma = 0x8001F2A8; // type:func

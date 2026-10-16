@@ -12,6 +12,7 @@
  * (e.g. @c sndCmd11) — fields holding sound handles compare against this
  * before issuing stop / fade commands.
  */
+
 #define SND_HANDLE_NONE (-1)
 
 /**
@@ -21,7 +22,26 @@
  * at D_80070D60 holds all active tracks.
  */
 typedef struct {
-    /* 0x00 */ s32 field00;       /**< Status/control flags; bit 0x400 selects the alternate SPU transfer address. */
+    /* 0x00 */ s16 low;
+    /* 0x02 */ s16 high;
+} SoundSignedHalves;
+typedef struct {
+    /* 0x00 */ u16 low;
+    /* 0x02 */ u16 high;
+} SoundUnsignedHalves;
+typedef union {
+    /* 0x00 */ s32 word;
+    /* 0x00 */ SoundSignedHalves halves;
+    /* 0x00 */ SoundUnsignedHalves unsignedHalves;
+} SoundPackedWord;
+
+typedef union {
+    /* 0x00 */ s32 value;
+    /* 0x00 */ u8 *cursor;
+} SoundTrackSource;
+
+typedef struct {
+    /* 0x00 */ SoundTrackSource field00;       /**< Status/control flags; bit 0x400 selects the alternate SPU transfer address. */
     /* 0x04 */ s32 instParams;
     /* 0x08 */ s32 field08;       /**< Flag accumulator (set/cleared via sndTrackSetFlags/ClearFlags). */
     /* 0x0C */ u16 field0C;
@@ -42,9 +62,9 @@ typedef struct {
     /* 0x44 */ s32 panShifted;
     /* 0x48 */ s32 panTarget;
     /* 0x4C */ u8 pad4C[4];
-    /* 0x50 */ s32 timing;
-    /* 0x54 */ u8 pad54[4];
-    /* 0x58 */ s32 pitchValue;
+    /* 0x50 */ SoundPackedWord timing;
+    /* 0x54 */ s32 volumeStep;
+    /* 0x58 */ SoundPackedWord pitchValue;
     /* 0x5C */ u16 field5C;
     /* 0x5E */ u16 field5E;
     /* 0x60 */ u16 voiceActive;
@@ -109,6 +129,12 @@ typedef struct {
 
 /** @brief 12-entry CD-audio track array (voices 12-23), stride 0x110. */
 extern SoundSeqTrack D_80072F70[];
+extern SoundSeqTrack D_80070D60[];
+extern SoundSeqTrack *D_80073CA8;
+extern SoundSeqTrack *D_80073C34;
+/* Only the first 112 bytes of this sequence state are saved. */
+extern SoundSeqTrack D_80073DF0;
+extern SoundSeqTrack D_80075080[32];
 
 /**
  * @brief Instrument/sample descriptor (D_80073E68, stride 16 bytes).
@@ -238,7 +264,9 @@ typedef struct {
     /* 0x08 */ s32 flags;          /**< Control flags (bit 24 gates the tick IRQ callback). */
     /* 0x0C */ s32 active;         /**< Active/IRQ voice bitmask (nonzero = playing). */
     /* 0x10 */ s32 voiceIdx;       /**< First SPU voice index for this stream. */
-    /* 0x14 */ u8 pad14[0x0C];
+    /* 0x14 */ u32 transferBytes;
+    /* 0x18 */ s32 unk18;
+    /* 0x1C */ s32 unk1C;
     /* 0x20 */ s32 unk20;
     /* 0x24 */ s32 tickCounter;    /**< Tick counter (incremented each frame). */
     /* 0x28 */ s32 tickCount;      /**< Running tick accumulator. */
