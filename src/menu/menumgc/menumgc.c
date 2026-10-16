@@ -10,8 +10,13 @@
 #include "menumgc.h"
 #include "numstr.h"
 #include "psxsdk/libetc.h"
+#include "ui/icon.h"
 
-extern s32 getMagicNamePtr(s32 a0);
+#define MAGIC_TEXT_SECTION 8
+#define MAGIC_OT_TEXT_LAYER 4
+
+extern u8 D_801ED014;
+extern u8 *getMagicNamePtr(s32 a0);
 extern u8 *getCharName(s32 a0);
 extern void copyString(s32 a0, s32 a1);
 
@@ -20,10 +25,10 @@ extern s32 popcount(s32 a0);
 extern s32 findNthSetBit(s32 a0, s32 a1);
 
 /* --- Prototypes for this unit's own functions --- */
-s32 func_801E5D64(s32 charA, s32 charB, s32 slotA, s32 slotB);
+s32 CanSwapMagicSlots(s32 charA, s32 charB, s32 slotA, s32 slotB);
 s32 func_801E5E74(s32 fromChar, s32 toChar);
 s32 func_801E5F5C(s32 charIdx, s32 spellId);
-s32 func_801E6058(s32 charIdx, s32 spellId);
+s32 func_801E6058(s32 fromChar, s32 toChar);
 s32 func_801E626C(s32 charA, s32 charB, s32 slotA, s32 slotB);
 s32 func_801E64FC(s32 charIdx, s32 order);
 void func_801E66C0(MagicMenuCtx *ctx);
@@ -72,8 +77,8 @@ escape:
             goto copy_check;
 esc26:
             {
-                s32 val = getMagicNamePtr(spellId);
-                copyString((s32)local_buf, val);
+                u8 *val = getMagicNamePtr(spellId);
+                copyString((s32)local_buf, (s32)val);
                 goto copy_check;
             }
 esc27:
@@ -297,15 +302,177 @@ s32 func_801E5D14(s32 a0, s32 a1, s32 a2, s32 a3) {
     return (r1 | r2) != 0;
 }
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E5D64);
+s32 CanSwapMagicSlots(s32 charA, s32 charB, s32 slotA, s32 slotB) {
+    s32 spellA = g_gameState.chars[charA].magic[slotA].magicId;
+    s32 spellB = g_gameState.chars[charB].magic[slotB].magicId;
+    s32 count;
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E5E74);
+    D_801ED014 = spellB;
+    if (func_801E5D14(charA, charB, spellA, spellB) == 0) {
+        return 1;
+    }
+    if (spellA == spellB) {
+        return 1;
+    }
+    count = func_801E5CAC(charA, spellB);
+    if (count + func_801E5CAC(charB, spellB) <= 100) {
+        count = func_801E5CAC(charB, spellA);
+        if (count + func_801E5CAC(charA, spellA) <= 100) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+s32 func_801E5E74(s32 fromChar, s32 toChar) {
+    s32 moved = 0;
+    u8 *slot = &g_gameState.chars[fromChar].magic[0].magicId;
+    s32 i;
+
+    for (i = 0; i < MAGIC_SLOT_COUNT; i++) {
+        s32 spellId = *slot++;
+        s32 qty = *slot++;
+
+        if (spellId != 0 && qty != 0) {
+            s32 added = func_801F7454(toChar, spellId, qty);
+
+            if (added != 0) {
+                moved = 1;
+            }
+            func_801F75EC(fromChar, spellId, added);
+        }
+    }
+    func_801F1B4C(fromChar);
+    func_801F5400(fromChar);
+    func_801F1B4C(toChar);
+    func_801F5400(toChar);
+    return moved;
+}
 
 INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E5F5C);
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E6058);
+s32 func_801E6058(s32 fromChar, s32 toChar) {
+    BattleCharData stats;
+    MagicSlot *magic;
+    s32 hp = g_gameState.chars[fromChar].currentHp;
+    s32 spellId;
+    s32 usedMask;
+    s32 qty;
+    s32 slot;
+    s32 moved;
+    s32 have;
+    s32 newHp;
+    s32 i;
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E626C);
+    func_801F7B10(fromChar);
+    func_801F7B10(toChar);
+    spellId = g_gameState.chars[fromChar].junctions[JUNCTION_HP];
+    if (spellId == 0) {
+        return 0;
+    }
+    magic = g_gameState.chars[toChar].magic;
+    usedMask = 0;
+    for (i = 0; i < MAGIC_SLOT_COUNT; i++, magic++) {
+        s32 id = magic->magicId;
+        s32 count = magic->quantity;
+
+        if (id == spellId) {
+            if (count == 100) {
+                return 0;
+            }
+        } else if (id != 0) {
+            usedMask |= 1 << i;
+        }
+    }
+    if (usedMask == -1) {
+        return 0;
+    }
+    qty = func_801E5CAC(fromChar, spellId);
+    if (qty == 0) {
+        return 0;
+    }
+    slot = func_801E5C00(fromChar, spellId);
+    have = func_801E5CAC(toChar, spellId);
+    if (have != 0) {
+        moved = 100 - have;
+        if (qty < moved) {
+            moved = qty;
+        }
+    } else {
+        moved = 0;
+        for (i = 0; i < MAGIC_SLOT_COUNT; i++) {
+            if (g_gameState.chars[toChar].magic[i].magicId == 0) {
+                moved = qty;
+            }
+        }
+    }
+    g_gameState.chars[fromChar].magic[slot].quantity -= moved;
+    func_801F537C(fromChar, &stats);
+    newHp = stats.currentHp;
+    g_gameState.chars[fromChar].magic[slot].magicId = spellId;
+    g_gameState.chars[fromChar].magic[slot].quantity = qty;
+    g_gameState.chars[fromChar].junctions[JUNCTION_HP] = spellId;
+    g_gameState.chars[fromChar].currentHp = hp;
+    func_801F5400(fromChar);
+    return newHp < hp;
+}
+
+s32 func_801E626C(s32 charA, s32 charB, s32 slotA, s32 slotB) {
+    s32 qtyA;
+    s32 qtyB;
+    s32 junctionA;
+    s32 junctionB;
+    s32 hpA;
+    s32 hpB;
+    s32 spellA;
+    s32 spellB;
+    s32 qty;
+
+    hpA = g_gameState.chars[charA].currentHp;
+    qtyA = g_gameState.chars[charA].magic[slotA].quantity;
+    spellA = g_gameState.chars[charA].magic[slotA].magicId;
+    hpB = g_gameState.chars[charB].currentHp;
+    qtyB = g_gameState.chars[charB].magic[slotB].quantity;
+    spellB = g_gameState.chars[charB].magic[slotB].magicId;
+    junctionA = func_801E5C50(charA, spellA);
+    junctionB = func_801E5C50(charB, spellB);
+    func_801F78D8(charA, spellA);
+    func_801F78D8(charB, spellB);
+    if (spellA != spellB) {
+        qty = func_801E5CAC(charB, spellA);
+        if (qty != 0) {
+            qtyA = qty + func_801E5CAC(charA, spellA);
+            g_gameState.chars[charB].magic[slotB].magicId = 0;
+            g_gameState.chars[charB].magic[slotB].quantity = 0;
+            slotB = func_801E5C00(charB, spellA);
+        }
+        qty = func_801E5CAC(charA, spellB);
+        if (qty != 0) {
+            qtyB = qty + func_801E5CAC(charB, spellB);
+            g_gameState.chars[charA].magic[slotA].magicId = 0;
+            g_gameState.chars[charA].magic[slotA].quantity = 0;
+            slotA = func_801E5C00(charA, spellB);
+        }
+    }
+    g_gameState.chars[charA].magic[slotA].magicId = spellB;
+    g_gameState.chars[charA].magic[slotA].quantity = qtyB;
+    g_gameState.chars[charB].magic[slotB].magicId = spellA;
+    g_gameState.chars[charB].magic[slotB].quantity = qtyA;
+    if (junctionA >= 0) {
+        func_801F784C(charA, spellB, junctionA);
+    }
+    if (junctionB >= 0) {
+        func_801F784C(charB, spellA, junctionB);
+    }
+    func_801F5400(charA);
+    func_801F5400(charB);
+    func_801F7B10(charA);
+    func_801F7B10(charB);
+    if (g_gameState.chars[charA].currentHp < hpA) {
+        return 1;
+    }
+    return g_gameState.chars[charB].currentHp < hpB;
+}
 
 INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E64FC);
 
@@ -340,7 +507,24 @@ s32 func_801E668C(s32 a0) {
     return mask != 0;
 }
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E66C0);
+void func_801E66C0(MagicMenuCtx *ctx) {
+    s32 charIdx = ctx->charIdx;
+
+    if ((1 << charIdx) & _getJunctionableCharMask()) {
+        ctx->commandMask = 9;
+    } else {
+        ctx->commandMask = 8;
+    }
+    if (func_801F79F8(SEALED_MAGIC)) {
+        ctx->commandMask = 8;
+    }
+    if (popcount(func_80036EC0()) >= 2) {
+        ctx->commandMask |= 6;
+    }
+    if (!((ctx->commandMask >> ctx->commandIdx) & 1)) {
+        ctx->commandIdx = func_80035B28(ctx->commandMask, ctx->commandIdx);
+    }
+}
 
 /**
  * @brief Get the quantity of a magic spell in a character's slot.
@@ -427,7 +611,16 @@ void func_801E68F0(s32 a0, s32 a1) {
     func_801F0A34(a0, 0, 0xD4, (a1 % 4) * 13 + 0x8D);
 }
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801E6940);
+void func_801E6940(MagicMenuCtx *ctx, s32 a1, s32 row) {
+    s32 slide = ctx->sortPopupSlide;
+    s32 y = 208 - ctx->sortOptionCount * 13;
+
+    y += row * 13;
+    slide = 4096 - slide;
+    slide = D_801FA3C8[slide / 64];
+    slide = slide * 160 / 4096;
+    func_801F0A34(a1, 0, 42 - slide, y);
+}
 
 /**
  * @brief Draw the command-row cursor over command @p a2.
@@ -1336,7 +1529,7 @@ dispatch:
             } else {
                 func_801E5A28(ctx->charIdx, 0);
                 func_801E5A28(ctx->partnerCharIdx, 1);
-                if (func_801E5D64(ctx->charIdx, ctx->partnerCharIdx,
+                if (CanSwapMagicSlots(ctx->charIdx, ctx->partnerCharIdx,
                                   ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
                     ctx->messageReturnState = 0x2C;
                     *statePtr = 0x43;
@@ -1464,7 +1657,7 @@ dispatch:
         break;
     case 0x31:
         ctx->drawFlags = 0;
-        if (func_801E5D64(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
+        if (CanSwapMagicSlots(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
             ctx->messageReturnState = 0x2C;
             *statePtr = 0x43;
             return;
@@ -1601,7 +1794,7 @@ dispatch:
         s32 srcQty;
         s32 dstQty;
 
-        if (func_801E5D64(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
+        if (CanSwapMagicSlots(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
             ctx->messageReturnState = 0x34;
             *statePtr = 0x43;
             return;
@@ -1673,7 +1866,7 @@ dispatch:
         return;
     }
     case 0x3B:
-        if (func_801E5D64(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
+        if (CanSwapMagicSlots(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
             ctx->messageReturnState = 0x34;
             *statePtr = 0x43;
             return;
@@ -1795,7 +1988,7 @@ dispatch:
             *statePtr = ctx->pageReturnState;
         }
         if (inputNew & PADRdown) {
-            if (func_801E5D64(ctx->charIdx, ctx->partnerCharIdx,
+            if (CanSwapMagicSlots(ctx->charIdx, ctx->partnerCharIdx,
                               ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
                 ctx->messageReturnState = 0x3F;
                 *statePtr = 0x43;
@@ -1832,7 +2025,7 @@ dispatch:
         g_gameState.chars[ctx->partnerCharIdx].magic[ctx->slotCursor[ctx->partnerCharIdx]].quantity = ctx->charQty;
         func_801F1B4C(ctx->charIdx);
         func_801F1B4C(ctx->partnerCharIdx);
-        if (func_801E5D64(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
+        if (CanSwapMagicSlots(ctx->charIdx, ctx->partnerCharIdx, ctx->slotCursor[ctx->charIdx], ctx->slotCursor[ctx->partnerCharIdx]) == 0) {
             ctx->messageReturnState = 0x3F;
             *statePtr = 0x43;
             return;
@@ -2561,7 +2754,18 @@ dispatch:
 
 INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EAF50);
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EB0F4);
+s32 DrawCommandRow(MagicMenuCtx *ctx, s32 ot, s32 pkt, s32 x, s32 y) {
+    s32 enabled = ctx->commandMask;
+
+    pkt = func_801F5A38(ot, pkt, x + 26, y + 6, MAGIC_TEXT_SECTION, D_801EC814, enabled);
+    g_menuDisplayCfg.iconType = 0;
+    g_menuDisplayCfg.iconSubType = 0;
+    g_menuDisplayCfg.x = x;
+    g_menuDisplayCfg.y = y;
+    g_menuDisplayCfg.w = 244;
+    g_menuDisplayCfg.h = 18;
+    return func_801EF9AC(ot, pkt, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
 
 /**
  * @brief Render a list item with name lookup and positioned text.
@@ -2623,19 +2827,235 @@ void func_801EB250(u8 *a0, s32 a1, s32 a2, s32 a3, s32 arg4) {
     func_801EFBB4(a1, a2, func_801EB1A0);
 }
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EB2D4);
+s32 DrawMagicListRow(s32 ot, s32 packet, s32 page, s32 row, s32 xOffset) {
+    s32 charIdx = g_menuDisplayCfg.itemId;
+    s32 magicId = page * 4 + row;
+    s32 quantity = g_gameState.chars[charIdx].magic[magicId].quantity;
+    s32 x = g_menuDisplayCfg.x + xOffset;
+    s32 y = g_menuDisplayCfg.y + row * 13;
+    s32 textX;
+    s32 textY;
+    s32 clut;
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EB454);
+    magicId = g_gameState.chars[charIdx].magic[magicId].magicId;
+    if (quantity != 0 && magicId != 0) {
+        if (func_801F1CE8(charIdx, magicId)) {
+            textY = y + 7;
+            packet = drawIcon(ot, packet, ICON_JUNCTION_MARK, x + 97, textY, g_menuTint[MENU_TINT_NORMAL]);
+        }
+        clut = func_801E599C(magicId) ? 7 : 1;
+        textX = x + 12;
+        textY = y + 7;
+        packet = func_801F0FEC(ot, packet, textX, textY, getMagicNamePtr(magicId), clut);
+        textX = x + 142;
+        packet = drawNumberMenuTint(ot, packet, (textY << 16) | (textX & 0xFFFF), quantity, clut);
+    }
+    return packet;
+}
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EB6A4);
+void func_801EB454(MagicMenuCtx *ctx, s32 ot, s32 dl, s32 x, s32 y, MenuRowCallback drawRow) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
+    s16 slide = ctx->slideOffset;
+    s32 offset;
+    s32 panelX;
+    s32 panelY;
+    CharacterData *chr;
+    CharMenuInfo *stats;
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EB80C);
+    offset = slide;
+    offset = D_801FA3C8[(offset < 0 ? -offset : offset) / 64];
+    if (slide < 0) {
+        offset = -offset;
+    }
+    panelX = x;
+    panelY = y;
+    if (offset != 0) {
+        stats = &g_charMenuInfo[ctx->prevCharIdx];
+        chr = &g_gameState.chars[ctx->prevCharIdx];
+        offset = offset * 384 / 4096;
+        panelX += offset;
+        if (slide > 0) {
+            panelX -= 384;
+        } else {
+            panelX += 384;
+        }
+        cfg = &g_menuDisplayCfg; /* Needed for the original register allocation. */
+        cfg->pageStart = ctx->upperPage;
+        cfg->pageEnd = ctx->upperPrevPage;
+        cfg->scrollOffset = ctx->upperPageSlide;
+        cfg->dataPtr = 0;
+        cfg->itemId = ctx->prevCharIdx;
+        dl = func_801F64A4(ot, func_801F739C(ot, dl, panelX + 200, panelY + 56, ctx->prevCharIdx, drawRow),
+                           panelX, panelY, chr, stats, 1);
+        panelX = x + offset;
+        panelY = y;
+    }
+    stats = &g_charMenuInfo[ctx->charIdx];
+    chr = &g_gameState.chars[ctx->charIdx];
+    cfg->pageStart = ctx->upperPage;
+    cfg->pageEnd = ctx->upperPrevPage;
+    cfg->scrollOffset = ctx->upperPageSlide;
+    cfg->dataPtr = 0;
+    cfg->itemId = ctx->charIdx;
+    func_801F64A4(ot, func_801F739C(ot, dl, panelX + 200, panelY + 56, ctx->charIdx, drawRow),
+                  panelX, panelY, chr, stats, 1);
+}
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EBA68);
+s32 func_801EB6A4(s32 ot, s32 dl, s32 page, s32 row, s32 xOffset) {
+    s32 charId;
+    s32 magicId;
+    s32 quantity;
+    s32 x;
+    s32 y;
+    s32 textX;
+    s32 textY;
+    s32 color;
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EBBE4);
+    magicId = page * 4 + row;
+    charId = g_menuDisplayCfg.itemId;
+    quantity = g_gameState.chars[charId].magic[magicId].quantity;
+    magicId = g_gameState.chars[charId].magic[magicId].magicId;
+    x = g_menuDisplayCfg.x + xOffset;
+    y = g_menuDisplayCfg.y + row * 13;
 
-INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EBD40);
+    if (quantity != 0 && magicId != 0) {
+        if (func_801F1CE8(charId, magicId)) {
+            textY = y + 7;
+            dl = drawIcon(ot, dl, ICON_JUNCTION_MARK, x + 97, textY, g_menuTint[MENU_TINT_NORMAL]);
+        }
+        textX = x + 12;
+        textY = y + 7;
+        color = 7;
+        dl = func_801F0FEC(ot, dl, textX, textY, getMagicNamePtr(magicId), color);
+        textX = x + 142;
+        dl = drawNumberMenuTint(ot, dl, (textY << 16) | (textX & 0xFFFF), quantity, color);
+    }
+    return dl;
+}
+
+void func_801EB80C(MagicMenuCtx *ctx, s32 ot, s32 dl, s32 x, s32 y) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
+    s16 slide = ctx->partnerSlideOffset;
+    s32 offset;
+    s32 panelX;
+    s32 panelY;
+    CharacterData *chr;
+    CharMenuInfo *stats;
+
+    offset = slide;
+    offset = D_801FA3C8[(offset < 0 ? -offset : offset) / 64];
+    if (slide < 0) {
+        offset = -offset;
+    }
+    y += 91;
+    panelX = x;
+    panelY = y;
+    if (offset != 0) {
+        stats = &g_charMenuInfo[ctx->prevCharIdx];
+        chr = &g_gameState.chars[ctx->prevCharIdx];
+        offset = offset * 384 / 4096;
+        panelX += offset;
+        if (slide > 0) {
+            panelX -= 384;
+        } else {
+            panelX += 384;
+        }
+        cfg = &g_menuDisplayCfg; /* Needed for the original register allocation. */
+        cfg->pageStart = ctx->lowerPage;
+        cfg->pageEnd = ctx->lowerPrevPage;
+        cfg->scrollOffset = ctx->lowerPageSlide;
+        cfg->dataPtr = 0;
+        cfg->itemId = ctx->prevCharIdx;
+        dl = func_801F64A4(ot, func_801F739C(ot, dl, panelX + 200, panelY + 56, ctx->prevCharIdx, func_801EB6A4),
+                           panelX, panelY, chr, stats, 1);
+        panelX = x + offset;
+        panelY = y;
+    }
+    stats = &g_charMenuInfo[ctx->partnerCharIdx];
+    chr = &g_gameState.chars[ctx->partnerCharIdx];
+    cfg->pageStart = ctx->lowerPage;
+    cfg->pageEnd = ctx->lowerPrevPage;
+    cfg->scrollOffset = ctx->lowerPageSlide;
+    cfg->dataPtr = 0;
+    cfg->itemId = ctx->partnerCharIdx;
+    func_801F64A4(ot, func_801F739C(ot, dl, panelX + 200, panelY + 56, ctx->partnerCharIdx, func_801EB6A4),
+                  panelX, panelY, chr, stats, 1);
+}
+
+s32 DrawTwoChoicePrompt(MagicMenuCtx *ctx, s32 ot, s32 pkt, s32 x, s32 y) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
+    s32 color = 7;
+    s32 tx;
+    s32 ty;
+    u8 *text;
+
+    ot += MAGIC_OT_TEXT_LAYER * sizeof(u32);
+    tx = x + 10;
+    ty = y + 7;
+    if (g_gameState.chars[ctx->charIdx].magic[ctx->slotCursor[ctx->charIdx]].magicId == 0) {
+        text = func_801F08D4(1, MAGIC_TEXT_SECTION, 10, 0);
+    } else {
+        text = func_801F08D4(1, MAGIC_TEXT_SECTION, 5, 0);
+    }
+    pkt = func_801F0FEC(ot, pkt, tx, ty, text, color);
+    ty += 13;
+    pkt = func_801F0FEC(ot, pkt, tx, ty, func_801F08D4(1, MAGIC_TEXT_SECTION, 6, 0), color);
+    cfg->iconType = ICON_CHOICE;
+    cfg->iconSubType = 0;
+    cfg->x = x;
+    cfg->y = y;
+    cfg->w = ctx->promptWidth;
+    cfg->h = 38;
+    return func_801EF9AC(ot, pkt, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
+
+/* The unsigned packet cursor is needed for the original register allocation. */
+s32 DrawThreeChoicePrompt(MagicMenuCtx *ctx, s32 ot, u32 pkt, s32 x, s32 y) {
+    s32 tx;
+    s32 ty;
+
+    ot += MAGIC_OT_TEXT_LAYER * sizeof(u32);
+    tx = x + 10;
+    ty = y + 7;
+    pkt = func_801F0FEC(ot, pkt, tx, ty, func_801F08D4(1, MAGIC_TEXT_SECTION, 5, 0), 7);
+    ty = y + 20;
+    pkt = func_801F0FEC(ot, pkt, tx, ty, func_801F08D4(1, MAGIC_TEXT_SECTION, 10, 0), 7);
+    ty = y + 33;
+    pkt = func_801F0FEC(ot, pkt, tx, ty, func_801F08D4(1, MAGIC_TEXT_SECTION, 6, 0), 7);
+    g_menuDisplayCfg.iconType = ICON_CHOICE;
+    g_menuDisplayCfg.iconSubType = 0;
+    g_menuDisplayCfg.x = x;
+    g_menuDisplayCfg.y = y;
+    g_menuDisplayCfg.w = ctx->promptWidth;
+    g_menuDisplayCfg.h = 51;
+    return func_801EF9AC(ot, pkt, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
+
+/* The unsigned packet cursor is needed for the original register allocation. */
+s32 DrawQuantityEditor(MagicMenuCtx *ctx, s32 ot, u32 pkt, s32 x, s32 y) {
+    s32 tx;
+    s32 ty;
+
+    ot += MAGIC_OT_TEXT_LAYER * sizeof(u32);
+    pkt = func_801F0FEC(ot, pkt, x + 9, y + 9, getMagicNamePtr(ctx->exchangeSpellId), 7);
+    tx = x + 16;
+    ty = y + 28;
+    pkt = func_801F0FEC(ot, pkt, tx, ty, getCharName(g_gameState.chars[ctx->charIdx].characterId), 7);
+    tx = x + 127;
+    pkt = drawNumberMenuTint(ot, pkt, (ty << 16) | (tx & 0xFFFF), ctx->charQty, 7);
+    tx = x + 16;
+    ty = y + 52;
+    pkt = func_801F0FEC(ot, pkt, tx, ty, getCharName(g_gameState.chars[ctx->partnerCharIdx].characterId), 7);
+    tx = x + 127;
+    pkt = drawNumberMenuTint(ot, pkt, (ty << 16) | (tx & 0xFFFF), ctx->partnerQty, 7);
+    g_menuDisplayCfg.iconType = ICON_CHOICE_2;
+    g_menuDisplayCfg.iconSubType = 0;
+    g_menuDisplayCfg.x = x;
+    g_menuDisplayCfg.w = 136;
+    g_menuDisplayCfg.y = y;
+    g_menuDisplayCfg.h = 72;
+    return func_801EF9AC(ot, pkt, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
 
 INCLUDE_ASM("asm/ovl/menumgc/nonmatchings/menumgc", func_801EBF08);
 

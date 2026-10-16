@@ -75,7 +75,7 @@ typedef struct {
     /* 0x58 */ s8 charQty;             /**< Quantity on charIdx's side of the quantity editor (0-100); the editor draws charQty on charIdx's row. */
     /* 0x59 */ s8 partnerQty;          /**< Quantity on partnerCharIdx's side; on commit the pair is written to the two slots crossed, because func_801E626C then swaps them. */
     /* 0x5A */ u8 exchangeSpellId;     /**< Spell the transfer prompts and the quantity editor work on. */
-    /* 0x5B */ u8 pad5B[0x1];          /**< Padding; func_801EC43C measures the prompt strings and stores the prompt panel's width here (read by func_801E6810, func_801E6858, func_801EBA68, func_801EBBE4). */
+    /* 0x5B */ u8 promptWidth;
     /* 0x5C */ s16 messageTimer;       /**< Frames left on the refusal message (600 when it opens, cut to 0 by a button press). */
     /* 0x5E */ u8 drawFlags;           /**< 0x01 two-choice prompt, 0x02 three-choice prompt, 0x04 yes/no box, 0x08 quantity editor, 0x10 suppress the lower list's cursor, 0x20 L/R character-switch arrows, 0x40 a sub-screen owns the cursor, 0x80 refusal message. */
     /* 0x5F */ u8 promptCursor;        /**< Choice cursor inside the two- and three-choice transfer prompts. */

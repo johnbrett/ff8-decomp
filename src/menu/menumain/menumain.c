@@ -2177,7 +2177,7 @@ s32 func_801F7394(s32 a0) {
  * Sets up g_menuDisplayCfg rendering params (icon 0x4A), then renders
  * the list, scroll indicator, and footer/help text.
  */
-void func_801F739C(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, MenuRowCallback a5) {
+s32 func_801F739C(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, MenuRowCallback a5) {
     s32 base = (s32)&g_menuDisplayCfg;
     s32 ret1;
     s32 ret2;
@@ -2193,7 +2193,7 @@ void func_801F739C(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, MenuRowCallback a5) {
 
     ret1 = func_801F5F30(a0, a1, a2 + 0x24, a3, g_menuTint[MENU_TINT_NORMAL], *(u8 *)(base + 0x16) /* pageStart */);
     ret2 = func_801F5F60(a0, ret1, g_menuTint[MENU_TINT_NORMAL], 3);
-    func_801EFBB4(a0, ret2, a5);
+    return func_801EFBB4(a0, ret2, a5);
 }
 
 INCLUDE_ASM("asm/ovl/menumain/nonmatchings/menumain", func_801F7454);
