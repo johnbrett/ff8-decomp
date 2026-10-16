@@ -1481,6 +1481,7 @@ binaries:
   sha1: db1e9412002655fb6f2991c44703b762679274af
   options:
     target_path: original/effect/effect_041.bin
+    section_order: [.text, .rodata, .data, .bss]
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_041.txt]
   segments:
@@ -1490,7 +1491,9 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_041]
-    - [0xBECC, .rodata, effect_041]
+    - [0xC24, c, lib/entity]
+    - [0x1794, c, effect_041_tail]
+    - [0xBECC, .rodata, effect_041_tail]
     - [0xBEE0, bin, effect_041]
   - [0x3A23C]
 - name: effect_042
