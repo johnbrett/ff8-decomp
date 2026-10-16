@@ -2,9 +2,17 @@
 #include "menu_tint.h"
 #include "card.h"
 #include "menugf.h"
+#include "menu.h"
+#include "gamestate.h"
+#include "character.h"
+#include "battle.h"
 
-extern u8 g_menuDisplayCfg[];
-extern u8 g_gameState[];
+extern s32 D_801E7E84;
+
+/* Defined last to preserve the original rodata order. */
+static const s16 D_801E7DCC[2];
+s32 func_801E70A8(s32, s32, s32, s32, s32);
+s32 func_801E6884(s32, s32, s32, s32, s32, s32);
 
 s32 func_801E6A8C(s32, s32, s32, s32, s32);
 
@@ -61,7 +69,22 @@ INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E5A60);
 
 INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E6884);
 
-INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E69B0);
+s32 DrawGfGrid(s32 ot, s32 packet, s32 x, s32 y, u16 gfMask) {
+    s32 i;
+    s32 col;
+    s32 row;
+    s32 level;
+
+    for (i = 0; i < GF_COUNT; i++) {
+        if ((gfMask >> i) & 1) {
+            col = (i % 8) * 40 + 12;
+            row = (i / 8) * 72 + 14;
+            level = g_battleChars.levelEntries[i].level;
+            packet = func_801E6884(ot, packet, x + col, y + row, i, level);
+        }
+    }
+    return packet;
+}
 
 INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E6A8C);
 
@@ -78,31 +101,50 @@ INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E6A8C);
  * @param a3 X position for display config.
  * @param arg4 Y position for display config.
  */
-void func_801E6B3C(u8 *a0, s32 a1, s32 a2, s32 a3, s32 arg4) {
-    u8 *cfg = g_menuDisplayCfg;
+void func_801E6B3C(GfMenuState *a0, s32 a1, s32 a2, s32 a3, s32 arg4) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
 
-    *(u8 *)(cfg + 0x10) = 0x55;
-    *(u8 *)(cfg + 0x11) = 0;
-    *(s16 *)&g_menuDisplayCfg[0] = a3;
-    *(s16 *)(cfg + 0x04) = 0x144;
-    *(s16 *)(cfg + 0x06) = 0x1A;
-    *(u8 *)(cfg + 0x13) = 1;
-    *(u8 *)(cfg + 0x16) = 0;
-    *(u8 *)(cfg + 0x17) = 1;
-    *(s16 *)(cfg + 0x02) = arg4;
-    *(s16 *)(cfg + 0x14) = *(u16 *)(a0 + 0x28);
-    *(s32 *)(cfg + 0x20) = (s32)(a0 + 0x20);
+    cfg->iconType = 0x55;
+    cfg->iconSubType = 0;
+    cfg->x = a3;
+    cfg->w = 324;
+    cfg->h = 26;
+    cfg->columnCount = 1;
+    cfg->pageStart = 0;
+    cfg->pageEnd = 1;
+    cfg->y = arg4;
+    cfg->scrollOffset = a0->scroll;
+    cfg->dataPtr = a0->items;
     func_801EFBB4(a1, a2, func_801E6A8C);
 }
 
-INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E6BB8);
+s32 func_801E6BB8(GfMenuState *ctx, s32 ot, s32 pkt, s32 x, s32 y) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
+    const s16 *list;
+    s32 tx = x + 26;
+    s32 ty = y + 6;
+
+    if (ctx->unk30 != 0) {
+        list = D_801E7DD0;
+    } else {
+        list = D_801E7DCC;
+    }
+    pkt = func_801F5A38(ot, pkt, tx, ty, 8, list, 1);
+    cfg->iconType = 0;
+    cfg->iconSubType = 0;
+    cfg->x = x;
+    cfg->y = y;
+    cfg->w = 244;
+    cfg->h = 18;
+    return func_801EF9AC(ot, pkt, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
 
 /**
  * @brief Set up GF summary display with icon and border rendering.
  *
  * Calls getGfAvailabilityMask to get a status value, then passes it along with
- * position constants to func_801E69B0 for rendering. Configures g_menuDisplayCfg
- * with icon 0x50, position (0x18, 0x38), dimensions (0x150 x 0xA0), and
+ * position constants to DrawGfGrid for rendering. Configures g_menuDisplayCfg
+ * with icon 0x50, position (24, 56), dimensions (336 x 160), and
  * calls func_801EF9AC for final display.
  *
  * @param a0 GF context pointer.
@@ -112,17 +154,17 @@ void func_801E6C84(s32 a0, s32 a1) {
     s32 ctx = a0;
     s32 renderCtx = a1;
     s32 result;
-    u8 *cfg;
+    MenuDisplayConfig *cfg;
 
     result = getGfAvailabilityMask() & 0xFFFF;
-    result = func_801E69B0(ctx, renderCtx, 0x18, 0x38, result);
-    cfg = g_menuDisplayCfg;
-    *(u8 *)(cfg + 0x10) = 0x50;
-    *(u8 *)(cfg + 0x11) = 0;
-    *(s16 *)&g_menuDisplayCfg[0] = 0x18;
-    *(s16 *)(cfg + 0x02) = 0x38;
-    *(s16 *)(cfg + 0x04) = 0x150;
-    *(s16 *)(cfg + 0x06) = 0xA0;
+    result = DrawGfGrid(ctx, renderCtx, 24, 56, result);
+    cfg = &g_menuDisplayCfg;
+    cfg->iconType = 0x50;
+    cfg->iconSubType = 0;
+    cfg->x = 24;
+    cfg->y = 56;
+    cfg->w = 336;
+    cfg->h = 160;
     func_801EF9AC(ctx, result, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
 }
 
@@ -158,7 +200,7 @@ void func_801E6D20(s32 a0, s32 a1, s32 a2, s32 a3, s32 arg4, volatile unsigned i
     ret = getCharName(new_var);
     new_var3 = 2;
     new_var5 = 0x4E8;
-    base = (s32)g_gameState;
+    base = (s32)&g_gameState;
     new_var2 = arg4;
 
     if (((*((u16 *)((base + ((2 * new_var2) * 76)) + new_var5))) >> arg6) & 1) {
@@ -179,7 +221,26 @@ INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E6E3C);
 
 INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E70A8);
 
-INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E733C);
+void func_801E733C(GfMenuState *menu, s32 ot, s32 head, s32 x, s32 y) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
+
+    cfg->iconType = 0x5E;
+    cfg->iconSubType = 0;
+    cfg->x = x + 144;
+    cfg->w = 216;
+    cfg->h = 160;
+    cfg->columnCount = 11;
+    cfg->y = y + 56;
+    cfg->pageStart = menu->unk36;
+    cfg->pageEnd = menu->unk37;
+    cfg->scrollOffset = menu->scroll;
+    cfg->itemId = g_gameState.gfs[menu->gfId].learning;
+    if (D_801E7E84 >= 12) {
+        head = func_801F5F30(ot, head, cfg->x + 40, cfg->y, g_menuTint[MENU_TINT_NORMAL], menu->unk36);
+        head = func_801F5F60(ot, head, g_menuTint[MENU_TINT_NORMAL], menu->unk36 == 0 ? 2 : 1);
+    }
+    func_801EFBB4(ot, head, func_801E70A8);
+}
 
 INCLUDE_ASM("asm/ovl/menugf/nonmatchings/menugf", func_801E7480);
 
@@ -251,3 +312,5 @@ void func_801E7CF4(u8 *a0) {
     func_801F1210(0x801D1000, 0x801CD000);
     func_801E7C20(a0);
 }
+
+static const s16 D_801E7DCC[2] = {-1, 0};

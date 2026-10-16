@@ -3,6 +3,11 @@
 #include "menucrd.h"
 #include "overlay.h"
 #include "ui/text.h"
+#include "ui/icon.h"
+#include "menumain.h"
+#include "card.h"
+
+
 
 /**
  * @brief Card menu task state, allocated by func_801F179C.
@@ -14,7 +19,8 @@ typedef struct {
     /* 0x00 */ u8 pad00[0x20];
     /* 0x20 */ u8 *rowText[2];      /**< Row text the list panels draw (MenuDisplayConfig.dataPtr). */
     /* 0x28 */ u16 scroll;
-    /* 0x2A */ u8 pad2A[2];
+    /* 0x2A */ s8 page; /* Signed for the numeric page-label call. */
+    /* 0x2B */ u8 pageEnd;
     /* 0x2C */ u8 unk2C;
     /* 0x2D */ u8 pad2D;
     /* 0x2E */ u8 card;             /**< Card under the cursor. */
@@ -25,6 +31,8 @@ typedef struct {
     /* 0x3C */ u8 pad3C[6];
     /* 0x42 */ u8 unk42;
 } CardMenuState;
+
+s32 func_801E60E8(s32, s32, s32, s32, s32);
 
 extern s16 D_801E7D64;
 extern s16 D_801E7D66;
@@ -254,7 +262,23 @@ s32 func_801E6228(s32 a0, s32 a1, s32 a2, s32 a3, s32 stackArg) {
  */
 INCLUDE_ASM("asm/ovl/menucrd/nonmatchings/menucrd", func_801E6270);
 
-INCLUDE_ASM("asm/ovl/menucrd/nonmatchings/menucrd", func_801E634C);
+s32 func_801E634C(CardMenuState *state, s32 ot, s32 pkt, s32 x, s32 y) {
+    pkt = drawIcon(ot, pkt, ICON_NUM, x + 127, y, g_menuTint[MENU_TINT_NORMAL]);
+    g_menuDisplayCfg.iconType = ICON_CARDS;
+    g_menuDisplayCfg.iconSubType = 0;
+    g_menuDisplayCfg.x = x;
+    g_menuDisplayCfg.w = 161;
+    g_menuDisplayCfg.h = 159;
+    g_menuDisplayCfg.y = y;
+    g_menuDisplayCfg.columnCount = 11;
+    g_menuDisplayCfg.pageStart = state->page;
+    g_menuDisplayCfg.pageEnd = state->pageEnd;
+    g_menuDisplayCfg.scrollOffset = state->scroll;
+    g_menuDisplayCfg.dataPtr = state;
+    pkt = func_801F5EFC(ot, pkt, x + 40, y, g_menuTint[MENU_TINT_NORMAL], state->page);
+    pkt = func_801F5F60(ot, pkt, g_menuTint[MENU_TINT_NORMAL], 3);
+    return func_801EFBB4(ot, pkt, func_801E60E8);
+}
 
 INCLUDE_ASM("asm/ovl/menucrd/nonmatchings/menucrd", func_801E645C);
 

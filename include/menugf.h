@@ -11,24 +11,30 @@
  *       signature. Prototypes that collide across overlays must stay in
  *       each overlay's own header, never in a shared one.
  *
- * @note @c menugf.c declares @c g_menuDisplayCfg at file scope instead of
- * including @c menu.h: that header types it as a @c MenuDisplayConfig
- * struct while this unit walks it as raw bytes
- *       (@c *(s16 *)&g_menuDisplayCfg[0]); including @c menu.h therefore
- *       requires converting those accesses to struct fields first, which is a
- *       codegen-affecting decomp change rather than a header cleanup.
  */
 #ifndef MENUGF_H
 #define MENUGF_H
 
 #include "common.h"
 
+typedef struct {
+    /* 0x00 */ u8 unk00[32];
+    /* 0x20 */ u8 *items[2];
+    /* 0x28 */ u16 scroll;
+    /* 0x2A */ u8 unk2A[6];
+    /* 0x30 */ u8 unk30;
+    /* 0x31 */ u8 gfId;
+    /* 0x32 */ u8 unk32[4];
+    /* 0x36 */ u8 unk36;
+    /* 0x37 */ u8 unk37;
+} GfMenuState;
+
 /* ======================================================================== */
 /* Data symbols                                                             */
 /* ======================================================================== */
 
 /** @brief GF stat lookup table (8 halfwords), read by @ref func_801E58C8. */
-extern u8 D_801E7DD0[];
+extern s16 D_801E7DD0[];
 
 /** @brief Selected-GF index used by the panel renderers. */
 extern u8 D_801E7E88;
@@ -44,7 +50,7 @@ void func_801E58C8(u8 *a0, s32 a1);
 void func_801E5988(u8 *a0, u8 *a1);
 
 /** @brief Render a GF detail row (menugf's own; see the file note). */
-void func_801E6B3C(u8 *a0, s32 a1, s32 a2, s32 a3, s32 arg4);
+void func_801E6B3C(GfMenuState *a0, s32 a1, s32 a2, s32 a3, s32 arg4);
 
 /** @brief Render the GF panel body for the selected GF. */
 void func_801E6C84(s32 a0, s32 a1);

@@ -1,14 +1,37 @@
 #include "common.h"
+#include "menu.h"
 #include "menu_tint.h"
 #include "menutmag.h"
 
+typedef struct {
+    /* 0x00 */ s16 x;
+    /* 0x02 */ s16 y;
+    /* 0x04 */ s16 w;
+    /* 0x06 */ s16 h;
+    /* 0x08 */ u8 unk08[13];
+    /* 0x15 */ u8 subOverlay;
+    /* 0x16 */ u8 unk16;
+    /* 0x17 */ u8 unk17;
+    /* 0x18 */ u8 unk18[11];
+    /* 0x23 */ u8 showHeader;
+    /* 0x24 */ u8 unk24[32];
+} TripleMagicEntry;
+
+typedef struct {
+    /* 0x00 */ u8 unk00[32];
+    /* 0x20 */ s32 brightness;
+    /* 0x24 */ s32 fade;
+    /* 0x28 */ s32 entryIndex;
+    /* 0x2C */ s32 previousEntryIndex;
+} TripleMagicContext;
+
 extern u8 D_801E764C[];
 extern u8 D_801E63EC[];
-extern u8 D_801E63F8[];
-extern u16 g_menuDisplayCfg[];
+extern TripleMagicEntry D_801E63F8[];
 
-void func_801E5800(s32 a0);
-void func_801E6170(s32 a0, s32 a1, s32 a2);
+void func_801E5800(TripleMagicContext *);
+static s32 DrawTripleMagicMenu(TripleMagicContext *, s32, s32);
+s32 func_801E606C(s32, s32, TripleMagicEntry *);
 
 INCLUDE_ASM("asm/ovl/menutmag/nonmatchings/menutmag", func_801E5800);
 
@@ -57,12 +80,12 @@ INCLUDE_ASM("asm/ovl/menutmag/nonmatchings/menutmag", func_801E5E2C);
  * @param colorData Color/shading data.
  * @param src Source entry data pointer (passed as 5th arg to sub-calls).
  */
-void func_801E5F5C(s32 ctx, s32 a1, s32 display, s32 colorData, s32 src) {
+s32 func_801E5F5C(s32 ctx, s32 a1, MenuDisplayConfig *display, s32 colorData, TripleMagicEntry *src) {
     a1 = func_801E5D1C(ctx, a1, display, colorData, src);
     a1 = func_801E5C34(ctx, a1, display, colorData, src);
     a1 = func_801E5AF0(ctx, a1, display, colorData, src);
     a1 = func_8002B898(ctx, a1, display, colorData);
-    func_801E5E2C(ctx, a1, display, colorData, src);
+    return func_801E5E2C(ctx, a1, display, colorData, src);
 }
 
 /**
@@ -78,13 +101,13 @@ void func_801E5F5C(s32 ctx, s32 a1, s32 display, s32 colorData, s32 src) {
  * @param yOff Y offset to add to position.
  * @param src Pointer to source coordinate/size struct (4 halfwords).
  */
-void func_801E6008(s32 a0, s32 a1, s32 xOff, s32 yOff, u16 *src) {
+s32 func_801E6008(s32 a0, s32 a1, s32 xOff, s32 yOff, TripleMagicEntry *src) {
 
-    g_menuDisplayCfg[0] = src[0] + xOff;
-    g_menuDisplayCfg[1] = src[1] + yOff;
-    g_menuDisplayCfg[2] = src[2];
-    g_menuDisplayCfg[3] = src[3];
-    func_801E5F5C(a0, a1, g_menuDisplayCfg, g_menuTint[MENU_TINT_NORMAL], src);
+    g_menuDisplayCfg.x = src->x + xOff;
+    g_menuDisplayCfg.y = src->y + yOff;
+    g_menuDisplayCfg.w = src->w;
+    g_menuDisplayCfg.h = src->h;
+    return func_801E5F5C(a0, a1, &g_menuDisplayCfg, g_menuTint[MENU_TINT_NORMAL], src);
 }
 
 /**
@@ -99,7 +122,26 @@ void func_801E6008(s32 a0, s32 a1, s32 xOff, s32 yOff, u16 *src) {
  */
 INCLUDE_ASM("asm/ovl/menutmag/nonmatchings/menutmag", func_801E606C);
 
-INCLUDE_ASM("asm/ovl/menutmag/nonmatchings/menutmag", func_801E6170);
+static s32 DrawTripleMagicMenu(TripleMagicContext *ctx, s32 ot, s32 head) {
+    TripleMagicEntry *entry;
+
+    if (ctx->brightness == 0) {
+        return head;
+    }
+    func_801F1AFC();
+    setMenuBrightness(ctx->brightness * ctx->fade / 4096);
+    setTextBrightness(ctx->brightness * ctx->fade / 4096);
+    entry = D_801E63F8;
+    entry += ctx->entryIndex;
+    head = func_801E6008(ot, head, 0, 0, entry);
+    setMenuBrightness(ctx->brightness);
+    setTextBrightness(ctx->brightness);
+    if (entry->showHeader != 0) {
+        head = func_801E606C(ot, head, entry);
+    }
+    func_801F1B10();
+    return head;
+}
 
 /**
  * @brief Initialize and run the triple magic menu overlay.
@@ -111,20 +153,20 @@ INCLUDE_ASM("asm/ovl/menutmag/nonmatchings/menutmag", func_801E6170);
  */
 void func_801E6290(void) {
 
-    s32 ctx;
+    TripleMagicContext *ctx;
     s32 entryIdx;
-    u8 *entry;
+    TripleMagicEntry *entry;
 
-    ctx = func_801F179C(func_801E5800, func_801E6170);
+    ctx = func_801F179C(func_801E5800, DrawTripleMagicMenu);
     func_801F1D2C(0, D_801E63EC, D_801E63F8);
 
     if (ctx != 0) {
         entryIdx = func_801E2800();
-        *(s32 *)(ctx + 0x28) = entryIdx;
-        *(s32 *)(ctx + 0x2C) = entryIdx;
-        entry = D_801E63F8 + entryIdx * 68;
-        loadSubOverlay(*(u8 *)(entry + 0x15) + 0x57, D_801E764C);
-        func_801E2820(*(u8 *)(entry + 0x16), *(u8 *)(entry + 0x17));
+        ctx->entryIndex = entryIdx;
+        ctx->previousEntryIndex = entryIdx;
+        entry = &D_801E63F8[entryIdx];
+        loadSubOverlay(entry->subOverlay + 0x57, D_801E764C);
+        func_801E2820(entry->unk16, entry->unk17);
         func_801E5800(ctx);
     }
 }

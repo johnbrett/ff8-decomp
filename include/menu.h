@@ -52,7 +52,7 @@ typedef struct {
     /* 0x1C */ u16 inputNew;      /**< Newly pressed buttons: (cur ^ prev) & cur. */
     /* 0x1E */ u8 itemId;         /**< Current item/card ID for rendering */
     /* 0x1F */ u8 itemAttr;       /**< Item attribute byte */
-    /* 0x20 */ s32 dataPtr;       /**< Pointer to item data array */
+    /* 0x20 */ void *dataPtr; /* Item data the row callback reads. */
 } MenuDisplayConfig; /* 0x24 bytes */
 
 /**
