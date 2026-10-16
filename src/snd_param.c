@@ -1,6 +1,12 @@
 #include "common.h"
 #include "sound.h"
 
+/* The byte view preserves the original signed byte load. */
+typedef union {
+    /* 0x00 */ s32 word;
+    /* 0x00 */ s8 bytes[4];
+} SoundParamWord;
+extern s32 D_80073DE8;
 extern s32 D_80075028;
 extern u16 D_80073E62;
 extern s32 D_80077284;
@@ -40,7 +46,20 @@ void sndSetPanFade(s8 *a0) {
 
 INCLUDE_ASM("asm/nonmatchings/snd_param", func_80019A2C);
 
-INCLUDE_ASM("asm/nonmatchings/snd_param", func_80019A94);
+void func_80019A94(SoundParamWord *args) {
+    s32 duration = 1;
+    s32 start;
+    s32 delta;
+
+    if (args[1].word != 0) {
+        duration = args[0].word;
+    }
+    start = args[1].bytes[0] << 16;
+    D_80077280 = start;
+    delta = ((args[2].bytes[0] << 16) - start) / duration;
+    D_80073E60 = duration;
+    D_80073DE8 = delta;
+}
 
 /**
  * @brief Transfers sound data for main and optional secondary sound sources.
@@ -153,7 +172,7 @@ void func_80019DB0(void) {
     SoundSeqTrack *ptr;
     s32 tmp;
 
-    if (g_sndSeqState->instParams != 0) {
+    if (g_sndSeqState->work.params.instParams != 0) {
         unusedMask = ~(D_80075028 | D_800772A4) & 0xFFFFFF;
         if (unusedMask != 0) {
             bit = 1;
@@ -171,8 +190,8 @@ void func_80019DB0(void) {
             } while (unusedMask != 0);
         }
         ptr = g_sndSeqState;
-        tmp = ptr->instParams;
-        ptr->instParams = 0;
+        tmp = ptr->work.params.instParams;
+        ptr->work.params.instParams = 0;
         ptr->keyOnPending = tmp;
     }
     D_800772F4 |= 1;

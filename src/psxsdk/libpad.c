@@ -1,4 +1,9 @@
 #include "common.h"
+#include "sound.h"
+
+extern void (*D_80056558)(SndVoice *);
+#define SND_ACTION_DELAY_TICKS 11
+static void func_8003C62C(SndVoice *voice);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk/libpad", PadEnableCom);
 
@@ -120,7 +125,33 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk/libpad", func_8003C2B8);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk/libpad", func_8003C3C8);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk/libpad", func_8003C62C);
+static void func_8003C62C(SndVoice *voice) {
+    voice->unk4C++;
+    if (voice->actionType != 0) {
+        if (voice->actionType == 1) {
+            if (voice->unk4A < SND_ACTION_DELAY_TICKS) {
+                voice->unk4A++;
+            } else {
+                voice->unk49 = 2;
+                voice->actionType = 255;
+            }
+            return;
+        }
+        if (voice->unk4A < SND_ACTION_DELAY_TICKS) {
+            voice->unk4A++;
+            return;
+        }
+        if (voice->unk49 != 0) {
+            D_80056558(voice);
+        }
+    }
+    if (*voice->unk3C != 0xF3) {
+        voice->unk30[0] = 255;
+        voice->unk30[1] = 0;
+        voice->unkE8 = 0;
+        voice->unk35 = 0;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk/libpad", func_8003C70C);
 

@@ -203,7 +203,7 @@ INCLUDE_ASM("asm/nonmatchings/snd_bank", func_80017AAC);
 INCLUDE_ASM("asm/nonmatchings/snd_bank", func_80017C9C);
 
 void func_80017D14(SoundSeqTrack *seq, s32 *tracks) {
-    s32 value = seq->instParams;
+    s32 value = seq->work.params.instParams;
     s32 mask;
     s32 bit;
     s32 *flags;
