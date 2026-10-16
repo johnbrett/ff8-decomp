@@ -84,6 +84,10 @@ typedef struct {
 /* ======================================================================== */
 
 void func_801EFF64(void);
+s32  func_801F0028(void);
+void func_801F0948(s32);
+s32  func_801F4274(s32, s32, s32, s32, s32, s32);
+void func_801F5440(void);
 DR_AREA *func_801F03E8(P_TAG *, DR_AREA *);
 u8  *func_801F08AC(u8 *, s32);
 s32  func_801F0AC8(s32, s32);
@@ -100,7 +104,7 @@ s32  func_801F3FE8();
 s32  func_801F4744();
 s32  func_801F6234(s32, s32, s32, s32, s32);
 s32  func_801F6358(s32, s32, s32, s32, s32);
-void func_801F66B0(s32, s32, s32, s32, s32);
+s32  func_801F66B0(s32, s32, s32, s32, s32);
 s32  func_801F6B54(s32, s32, s32, s32, s32);
 void func_801F6C9C(s32, s32, s32, s32, s32, u16);
 s32 func_801F22F4(void);
@@ -108,11 +112,11 @@ void func_801F23D0(s32, s32, u8 *);
 u16  func_801F2370(void);
 void func_801F2458(s32);
 void func_801F798C(void);
-s32  func_801F64A4(s32, s32, s32, s32, s32, s32, s32);
+s32  func_801F64A4(s32, s32, s32, s32, CharacterData *, CharMenuInfo *, s32);
 s32  func_801F3DE4(s32, s32, s32, s32, s32, s32, s32);
 s32  func_801F5E0C(s32, s32, s32, s32, s32, s32, s32);
 s32  func_801F5F60(s32, s32, s32, s32);
-s32  func_801F605C(s32, s32, s32, s32, s32);
+s32  func_801F605C(s32, s32, s32, s32, CharMenuInfo *);
 s32  func_801F4A98(s32, s32, s32);
 void func_801F5490(s32);
 s32  func_801F5B54(s32, s32, s32, s32, s32, u16 *, s32);

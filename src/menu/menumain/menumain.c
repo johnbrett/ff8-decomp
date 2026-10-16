@@ -1287,8 +1287,8 @@ INCLUDE_ASM("asm/ovl/menumain/nonmatchings/menumain", func_801F3FE8);
 INCLUDE_ASM("asm/ovl/menumain/nonmatchings/menumain", func_801F4168);
 
 /** @brief Draw ability/status list line (default mode, last param = 0). */
-void func_801F4274(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5) {
-    func_801F4168(a0, a1, a2, a3, a4, a5, 0);
+s32 func_801F4274(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5) {
+    return func_801F4168(a0, a1, a2, a3, a4, a5, 0);
 }
 
 INCLUDE_ASM("asm/ovl/menumain/nonmatchings/menumain", func_801F42A4);
@@ -1876,12 +1876,12 @@ INCLUDE_ASM("asm/ovl/menumain/nonmatchings/menumain", func_801F64A4);
  * Chains: func_801F64A4 (header/portrait), func_801F3DE4 (stats block),
  * func_801F6234 (HP/status bar), func_801F605C (ability/junction summary).
  */
-s32 func_801F65F0(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5) {
+s32 func_801F65F0(s32 a0, s32 a1, s32 a2, s32 a3, CharacterData *a4, CharMenuInfo *a5) {
     s32 ret;
 
     ret = func_801F64A4(a0, a1, a2, a3, a4, a5, 1);
-    ret = func_801F3DE4(*(s32 *)a5, *(s32 *)(a5 + 4), a0, ret, a2 + 0x20, a3 + 0x7C, 7);
-    ret = func_801F6234(a0, ret, a2 + 0xD0, a3 + 0x39, *(u16 *)(a5 + 0xE));
+    ret = func_801F3DE4(a5->unk00, a5->unk04, a0, ret, a2 + 0x20, a3 + 0x7C, 7);
+    ret = func_801F6234(a0, ret, a2 + 0xD0, a3 + 0x39, a5->statusFlags);
     return func_801F605C(a0, ret, a2 + 0x10E, a3 + 0x38, a5);
 }
 
@@ -1903,7 +1903,7 @@ s32 func_801F65F0(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5) {
  * @param y       Panel base Y.
  * @param weaponId Weapon to display.
  */
-void func_801F66B0(s32 ctx, s32 dl, s32 x, s32 y, s32 weaponId) {
+s32 func_801F66B0(s32 ctx, s32 dl, s32 x, s32 y, s32 weaponId) {
     u8 *name;
 
     x += 0xC8;
@@ -1918,7 +1918,7 @@ void func_801F66B0(s32 ctx, s32 dl, s32 x, s32 y, s32 weaponId) {
     y += 7;
     name = getWeaponName(weaponId);
     dl = func_801F0FEC(ctx, dl, x, y, name, 7);
-    func_801EF9AC(ctx, dl, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+    return func_801EF9AC(ctx, dl, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
 }
 
 /**
