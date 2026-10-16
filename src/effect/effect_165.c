@@ -3,6 +3,21 @@
  * @brief Lion Heart
  */
 #include "common.h"
+#include "psxsdk/libgte.h"
+#include "battle/bc_object9.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ s16 unk00C;
+    /* 0x0E */ s16 unk00E;
+    /* 0x10 */ SVECTOR unk010;
+} LionHeartTask;
+
+extern s32 D_801F1770;
+extern s32 D_801F178C;
+extern SVECTOR D_801F1798;
+
+s32 func_801BAE1C(LionHeartTask *task);
 
 INCLUDE_ASM("asm/ovl/effect_165/nonmatchings/effect_165", func_801B0000);
 
@@ -148,7 +163,17 @@ INCLUDE_ASM("asm/ovl/effect_165/nonmatchings/effect_165", func_801BAD78);
 
 INCLUDE_ASM("asm/ovl/effect_165/nonmatchings/effect_165", func_801BAE1C);
 
-INCLUDE_ASM("asm/ovl/effect_165/nonmatchings/effect_165", func_801BB278);
+void func_801BB278(void) {
+    LionHeartTask *task;
+    s32 index;
+
+    task = func_800B2A84(&D_801F1770, func_801BAE1C);
+    task->unk00C = 0;
+    index = D_801F178C;
+    task->unk00E = index++;
+    task->unk010 = D_801F1798;
+    D_801F178C = index;
+}
 
 INCLUDE_ASM("asm/ovl/effect_165/nonmatchings/effect_165", func_801BB2E0);
 

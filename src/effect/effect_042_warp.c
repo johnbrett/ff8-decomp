@@ -7,6 +7,10 @@
 #include "psxsdk/libgpu.h"
 #include "psxsdk/inline_c.h"
 #include "effect/lib/common.h"
+#include "effect/lib/rotz.h"
+
+void func_801A0B04(MATRIX *matrix, SVECTOR *direction, SVECTOR *up);
+void func_801A9578(BattleEffectSlot *slot, s32 bone, s32 offset, MATRIX *matrix);
 
 /** @brief A posed vertex and the projected coordinates reused by its faces. */
 typedef struct {
@@ -32,7 +36,8 @@ typedef struct {
     /* 0x6C */ POLY_FT3 **prims;
     /* 0x70 */ u32 unk070;
     /* 0x74 */ SVECTOR origin;
-    /* 0x7C */ u8 pad07C[0x9C - 0x7C];
+    /* 0x7C */ SVECTOR unk07C;
+    /* 0x84 */ u8 pad084[24];
     /* 0x9C */ SVECTOR angles;
     /* 0xA4 */ u8 pad0A4[0xC8 - 0xA4];
     /* 0xC8 */ u16 blend;
@@ -315,7 +320,55 @@ INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042_warp", func_801AB1D0);
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042_warp", func_801AB3BC);
 
-INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042_warp", func_801AB528);
+void func_801AB528(EffectEntity *entity, ShootWarpRender *render) {
+    MATRIX matrix;
+    SVECTOR offset;
+    SVECTOR point0;
+    SVECTOR point1;
+    SVECTOR up;
+    SVECTOR direction;
+    BattleEffectSlot *slot;
+    s16 y;
+
+    slot = &D_800EF2D0[entity->animSet->slot];
+    if (entity->unk024 < 31) {
+        func_800B3960(slot, 24, 0, &point0);
+        func_800B3960(slot, 21, 0, &point1);
+        up.vz = ONE;
+        up.vx = 0;
+        up.vy = 0;
+        direction.vx = point1.vx - point0.vx;
+        direction.vy = point1.vy - point0.vy;
+        direction.vz = point1.vz - point0.vz;
+        VectorNormalSS(&direction, &direction);
+        func_801A0B04(&render->rotation, &direction, &up);
+    } else if (entity->unk024 < 39) {
+        func_801A9578(slot, 24, 0, &render->rotation);
+        effectMatrixRotX(&render->rotation, 0x800);
+    } else {
+        effectMatrixIdentity(&render->rotation);
+    }
+    matrix = render->rotation;
+    func_800B3960(slot, 24, 0, &render->unk07C);
+    y = render->origin.vy + 1024;
+    /* This height interpolation reads the blend as signed. */
+    offset.vy = y + (render->radiusY - y) * (s16)render->blend / ONE;
+    offset.vx = 0;
+    offset.vz = 0;
+    if (render->angles.vz != 0) {
+        effectMatrixRotZ(&matrix, render->angles.vz);
+    }
+    if (render->angles.vx != 0) {
+        effectMatrixRotX(&matrix, render->angles.vx);
+    }
+    if (render->angles.vy != 0) {
+        effectMatrixRotY(&matrix, render->angles.vy);
+    }
+    ApplyMatrixSV(&matrix, &offset, &offset);
+    render->unk07C.vx += offset.vx;
+    render->unk07C.vy += offset.vy;
+    render->unk07C.vz += offset.vz;
+}
 
 INCLUDE_ASM("asm/ovl/effect_042/nonmatchings/effect_042_warp", func_801AB788);
 

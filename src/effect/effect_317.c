@@ -3,6 +3,19 @@
  * @brief Acid (Quistis)
  */
 #include "common.h"
+#include "battle.h"
+#include "battle/bc_object9.h"
+#include "battle/bc_object15.h"
+
+typedef struct {
+    /* 0x00 */ u8 unk00[12];
+    /* 0x0C */ s32 frame;
+    /* 0x10 */ SVECTOR pos;
+    /* 0x18 */ SVECTOR velocity;
+} SpriteParticle317;
+
+extern void *D_801D34C4;
+extern BattleSpriteAnim D_801A6518;
 
 INCLUDE_ASM("asm/ovl/effect_317/nonmatchings/effect_317", func_801A0000);
 
@@ -52,7 +65,27 @@ INCLUDE_ASM("asm/ovl/effect_317/nonmatchings/effect_317", func_801A203C);
 
 INCLUDE_ASM("asm/ovl/effect_317/nonmatchings/effect_317", func_801A20F0);
 
-INCLUDE_ASM("asm/ovl/effect_317/nonmatchings/effect_317", func_801A21A0);
+s32 func_801A21A0(SpriteParticle317 *particle) {
+    BattleSpritePrim *prim;
+    s32 frame;
+    void *head;
+
+    func_800C96E4(&particle->pos, particle->pos.pad, 0);
+    prim = func_800B3698(sizeof(BattleSpritePrim));
+    prim->anim = &D_801A6518;
+    prim->frame = particle->frame;
+    prim->flags = 0;
+    head = D_801D34C4;
+    D_801D34C4 = func_800C9E10(prim, D_800FA5E8->ot, 2, head);
+    func_800B36B8(sizeof(BattleSpritePrim));
+    frame = particle->frame + 1;
+    particle->pos.vx += particle->velocity.vx;
+    particle->pos.vy += particle->velocity.vy;
+    particle->pos.vz += particle->velocity.vz;
+    particle->velocity.vy += 16;
+    particle->frame = frame;
+    return (frame >= 9) * 2;
+}
 
 INCLUDE_ASM("asm/ovl/effect_317/nonmatchings/effect_317", func_801A227C);
 

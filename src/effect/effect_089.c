@@ -3,6 +3,8 @@
  * @brief Wishing Star
  */
 #include "common.h"
+#include "effect.h"
+#include "psxsdk/inline_c.h"
 
 INCLUDE_ASM("asm/ovl/effect_089/nonmatchings/effect_089", func_801A0000);
 
@@ -88,7 +90,19 @@ INCLUDE_ASM("asm/ovl/effect_089/nonmatchings/effect_089", func_801A4248);
 
 INCLUDE_ASM("asm/ovl/effect_089/nonmatchings/effect_089", func_801A4494);
 
-INCLUDE_ASM("asm/ovl/effect_089/nonmatchings/effect_089", func_801A451C);
+static void func_801A451C(BattleEffectSlot *slot, SVECTOR *vertex, SVECTOR *out) {
+    MATRIX transform;
+    EffectJoint *joint = slot->mesh->skeleton->joints;
+
+    func_800BC420(slot->unk060);
+    joint += vertex->pad;
+    CompMatrix(&slot->mtx, &joint->mtx, &transform);
+    gte_SetRotMatrix(&transform);
+    gte_SetTransMatrix(&transform);
+    gte_ldv0(vertex);
+    gte_rt();
+    gte_stsv(out);
+}
 
 INCLUDE_ASM("asm/ovl/effect_089/nonmatchings/effect_089", func_801A4608);
 

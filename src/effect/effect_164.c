@@ -3,6 +3,24 @@
  * @brief Blasting Zone
  */
 #include "common.h"
+#include "effect.h"
+#include "battle/bc_object9.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ s16 frame;
+    /* 0x0E */ u8 pad00E[2];
+    /* 0x10 */ SVECTOR pos;
+    /* 0x18 */ u8 pad018[4];
+    /* 0x1C */ s16 unk01C;
+    /* 0x1E */ s16 unk01E;
+} BlastingZoneTask;
+
+extern u8 D_801EE660[];
+extern SVECTOR D_801EE678;
+extern s32 D_801ED828;
+
+s32 func_801B6FC4(BlastingZoneTask *task);
 
 INCLUDE_ASM("asm/ovl/effect_164/nonmatchings/effect_164", func_801B0000);
 
@@ -82,7 +100,15 @@ INCLUDE_ASM("asm/ovl/effect_164/nonmatchings/effect_164", func_801B6B24);
 
 INCLUDE_ASM("asm/ovl/effect_164/nonmatchings/effect_164", func_801B6FC4);
 
-INCLUDE_ASM("asm/ovl/effect_164/nonmatchings/effect_164", func_801B70E0);
+static void func_801B70E0(void) {
+    BlastingZoneTask *task = func_800B2A84(D_801EE660, func_801B6FC4);
+
+    task->frame = 0;
+    task->pos = D_801EE678;
+    task->pos.pad = D_800EF2D0[D_801ED828].unk026 * 125 >> 8;
+    task->unk01E = 128;
+    task->unk01C = 128;
+}
 
 INCLUDE_ASM("asm/ovl/effect_164/nonmatchings/effect_164", func_801B7184);
 

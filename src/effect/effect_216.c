@@ -3,6 +3,21 @@
  * @brief Different Beat (Zell's Finisher)
  */
 #include "common.h"
+#include "battle.h"
+#include "battle/bc_object9.h"
+#include "battle/bc_object15.h"
+
+typedef struct {
+    /* 0x00 */ u8 unk00[12];
+    /* 0x0C */ SVECTOR pos;
+    /* 0x14 */ s8 velocityX;
+    /* 0x15 */ s8 velocityY;
+    /* 0x16 */ s8 velocityZ;
+    /* 0x17 */ s8 frame;
+} SpriteParticle216;
+
+extern BattleSpriteAnim D_801AAE10;
+extern void *D_801C3B8C;
 
 INCLUDE_ASM("asm/ovl/effect_216/nonmatchings/effect_216", func_801A0000);
 
@@ -106,7 +121,26 @@ INCLUDE_ASM("asm/ovl/effect_216/nonmatchings/effect_216", func_801A7628);
 
 INCLUDE_ASM("asm/ovl/effect_216/nonmatchings/effect_216", func_801A76E4);
 
-INCLUDE_ASM("asm/ovl/effect_216/nonmatchings/effect_216", func_801A7798);
+s32 func_801A7798(SpriteParticle216 *particle) {
+    BattleSpritePrim *prim;
+    s8 frame;
+    void *head;
+
+    func_800C96E4(&particle->pos, particle->pos.pad, -(particle->pos.pad >> 2));
+    prim = func_800B3698(sizeof(BattleSpritePrim));
+    prim->anim = &D_801AAE10;
+    prim->frame = particle->frame;
+    prim->flags = 0;
+    head = D_801C3B8C;
+    D_801C3B8C = func_800C9E10(prim, D_800FA5E8->ot, 2, head);
+    func_800B36B8(sizeof(BattleSpritePrim));
+    frame = particle->frame + 1;
+    particle->pos.vx += particle->velocityX << 2;
+    particle->pos.vy += particle->velocityY << 2;
+    particle->pos.vz += particle->velocityZ << 2;
+    particle->frame = frame;
+    return (frame > 11) * 2;
+}
 
 INCLUDE_ASM("asm/ovl/effect_216/nonmatchings/effect_216", func_801A7898);
 

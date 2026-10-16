@@ -3,6 +3,38 @@
  * @brief Angelo Rush
  */
 #include "common.h"
+#include "effect.h"
+#include "battle/bc_object13.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad000[28];
+    /* 0x1C */ SVECTOR pos;
+} AngeloRushModel;
+
+typedef struct {
+    /* 0x00 */ u8 pad000[41];
+    /* 0x29 */ u8 pc;
+    /* 0x2A */ u8 pad02A[3];
+    /* 0x2D */ u8 slotIndex;
+    /* 0x2E */ u8 pad02E[2];
+    /* 0x30 */ AngeloRushModel model;
+    /* 0x54 */ u8 pad054[192];
+    /* 0x114 */ s32 scaleX;
+    /* 0x118 */ s32 scaleY;
+    /* 0x11C */ s32 scaleZ;
+    /* 0x120 */ u8 pad120[8];
+    /* 0x128 */ s16 unk128;
+} AngeloRushTask;
+
+typedef struct {
+    /* 0x00 */ u8 pad000[8];
+    /* 0x08 */ SVECTOR pos;
+} AngeloRushSource;
+
+extern AngeloRushSource *D_801B2454;
+extern u8 D_801B2458[];
+
+void func_801AFF94(AngeloRushTask *task, s32 arg1);
 
 INCLUDE_ASM("asm/ovl/effect_091/nonmatchings/effect_091", func_801A0000);
 
@@ -413,7 +445,21 @@ INCLUDE_ASM("asm/ovl/effect_091/nonmatchings/effect_091", func_801B0D80);
 
 INCLUDE_ASM("asm/ovl/effect_091/nonmatchings/effect_091", func_801B10A0);
 
-INCLUDE_ASM("asm/ovl/effect_091/nonmatchings/effect_091", func_801B111C);
+static void InitAngeloRush(AngeloRushTask *task) {
+    BattleEffectSlot *slot = &D_800EF2D0[task->slotIndex];
+    AngeloRushModel *model = &task->model;
+
+    model->pos = D_801B2454->pos;
+    model->pos.vy = 0;
+    model->pos.vz = model->pos.vz + (slot->unk026 * 125 >> 8) + 9216;
+    task->unk128 = -256;
+    task->scaleZ = ONE;
+    task->scaleY = ONE;
+    task->scaleX = ONE;
+    func_801AFF94(task, 0);
+    func_800C4764(D_801B2458, 0, 128);
+    task->pc++;
+}
 
 INCLUDE_ASM("asm/ovl/effect_091/nonmatchings/effect_091", func_801B1200);
 

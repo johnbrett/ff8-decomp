@@ -3,6 +3,39 @@
  * @brief Angelo Cannon
  */
 #include "common.h"
+#include "effect.h"
+
+#define ANGELO_SLOT_FLAG_UNK200 0x200
+
+typedef struct {
+    /* 0x00 */ u8 pad000[28];
+    /* 0x1C */ SVECTOR position;
+} AngeloAnchor;
+
+typedef struct {
+    /* 0x00 */ u8 pad000[38];
+    /* 0x26 */ u16 flags;
+    /* 0x28 */ u8 unk028;
+    /* 0x29 */ u8 pc;
+    /* 0x2A */ u8 pad02A[2];
+    /* 0x2C */ u8 slot;
+    /* 0x2D */ u8 pad02D[3];
+    /* 0x30 */ AngeloAnchor anchor;
+    /* 0x54 */ u8 pad054[192];
+    /* 0x114 */ s32 scaleX;
+    /* 0x118 */ s32 scaleY;
+    /* 0x11C */ s32 scaleZ;
+    /* 0x120 */ u8 pad120[20];
+    /* 0x134 */ s16 unk134;
+    /* 0x136 */ u8 pad136[26];
+    /* 0x150 */ u32 slotFlags;
+} AngeloEntity;
+
+extern u8 D_801E9D64[];
+extern u8 D_801E0914[];
+extern SVECTOR *D_801ADEFC;
+
+void func_801AAADC(AngeloEntity *entity, s16 frame);
 
 INCLUDE_ASM("asm/ovl/effect_086/nonmatchings/effect_086", func_801A0000);
 
@@ -434,7 +467,23 @@ INCLUDE_ASM("asm/ovl/effect_086/nonmatchings/effect_086", func_801AC62C);
 
 INCLUDE_ASM("asm/ovl/effect_086/nonmatchings/effect_086", func_801AC748);
 
-INCLUDE_ASM("asm/ovl/effect_086/nonmatchings/effect_086", func_801AC87C);
+void func_801AC87C(AngeloEntity *entity) {
+    BattleEffectSlot *slot = &D_800EF2D0[entity->slot];
+    AngeloAnchor *anchor = &entity->anchor;
+
+    func_800B3B54(slot, D_801E9D64, D_801E0914);
+    func_800C2AB0(slot, 1);
+    entity->flags |= EFFECT_FLAG_DONE;
+    anchor->position = *D_801ADEFC;
+    anchor->position.vy = 0;
+    anchor->position.vz += 4608;
+    entity->scaleX = entity->scaleY = entity->scaleZ = ONE;
+    func_801AAADC(entity, 0);
+    entity->slotFlags = slot->flags;
+    slot->flags |= ANGELO_SLOT_FLAG_UNK200;
+    entity->unk134 = 0;
+    entity->pc++;
+}
 
 INCLUDE_ASM("asm/ovl/effect_086/nonmatchings/effect_086", func_801AC988);
 

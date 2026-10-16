@@ -3,6 +3,22 @@
  * @brief Rough Divide
  */
 #include "common.h"
+#include "effect.h"
+#include "battle/bc_object9.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ s16 frame;
+    /* 0x0E */ s16 unk00E;
+    /* 0x10 */ SVECTOR pos;
+} RoughDivideTask;
+
+extern u8 D_801EFA18[];
+extern s32 D_801EEBCC;
+extern s16 D_801EFDAC[];
+extern SVECTOR D_801EFA30;
+
+s32 func_801B5158(RoughDivideTask *task);
 
 INCLUDE_ASM("asm/ovl/effect_163/nonmatchings/effect_163", func_801B0000);
 
@@ -54,7 +70,16 @@ INCLUDE_ASM("asm/ovl/effect_163/nonmatchings/effect_163", func_801B4B90);
 
 INCLUDE_ASM("asm/ovl/effect_163/nonmatchings/effect_163", func_801B5158);
 
-INCLUDE_ASM("asm/ovl/effect_163/nonmatchings/effect_163", func_801B585C);
+static void func_801B585C(void) {
+    RoughDivideTask *task = func_800B2A84(D_801EFA18, func_801B5158);
+
+    task->unk00E = 1;
+    task->frame = 0;
+    task->pos.vx = D_800EF2D0[D_801EEBCC].pos.vx;
+    task->pos.vy = 0;
+    task->pos.vz = D_801EFDAC[0];
+    D_801EFA30 = task->pos;
+}
 
 INCLUDE_ASM("asm/ovl/effect_163/nonmatchings/effect_163", func_801B5900);
 
