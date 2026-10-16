@@ -5,6 +5,50 @@
 #include "character.h"
 #include "menuext.h"
 #include "gamestate.h"
+#include "ui/icon.h"
+#include "ability_list.h"
+
+typedef struct {
+    /* 0x00 */ u16 nameOffset;
+    /* 0x02 */ u16 yield;
+    /* 0x04 */ u8 unk04;
+    /* 0x05 */ u8 srcId;
+    /* 0x06 */ u8 cost;
+    /* 0x07 */ u8 dstId;
+} ExtEntry;
+
+typedef struct {
+    /* 0x00 */ u8 pad00[36];
+    /* 0x24 */ ExtEntry *entries;
+    /* 0x28 */ u8 pad28[8];
+    /* 0x30 */ u8 *unk30;
+    /* 0x34 */ u8 *unk34;
+    /* 0x38 */ u8 pad38[2];
+    /* 0x3A */ u16 scroll;
+    /* 0x3C */ u8 pad3C[6];
+    /* 0x42 */ u8 pageStart;
+    /* 0x43 */ u8 pageEnd;
+    /* 0x44 */ u8 pad44;
+    /* 0x45 */ u8 mode;
+    /* 0x46 */ u8 entryCount;
+    /* 0x47 */ u8 unk47;
+    /* 0x48 */ u8 charIdx;
+    /* 0x49 */ u8 pad49[2];
+    /* 0x4B */ u8 magicId;
+    /* 0x4C */ u8 pad4C;
+    /* 0x4D */ u8 entryIdx;
+    /* 0x4E */ s8 srcCount;
+    /* 0x4F */ s8 unk4F;
+    /* 0x50 */ s8 dstCount;
+    /* 0x51 */ u8 pad51;
+    /* 0x52 */ u8 unk52;
+    /* 0x53 */ u8 state; /* 0xFF = inactive */
+} ExtMenuCtx;
+
+extern u8 *getMagicNamePtr(s32 magicId);
+s32 func_801E5B88(s32, ExtEntry *, s32, s32, s32, s32);
+s32 func_801E76D4(s32, s32, s32, s32, s32);
+s32 func_801E7858(s32, s32, s32, s32, s32);
 
 extern u8 D_801E8C10[];
 extern u8 D_801E8C20[];
@@ -49,7 +93,25 @@ u8 *func_801E5854(s32 a0) {
     return func_801F08D4(1, 2, a0, 0);
 }
 
-INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E5880);
+s32 func_801E5880(s32 abilityId) {
+    AbilityListEntry list[22];
+    AbilityListEntry *entry;
+    s32 best = 0;
+    s32 count;
+    s32 gf;
+
+    for (gf = 0; gf < GF_COUNT; gf++) {
+        if (g_gameState.gfs[gf].exists & GF_EXISTS) {
+            count = func_800369CC(gf, list, 0);
+            for (entry = list; count > 0; count--, entry++) {
+                if (entry->slotIndex == abilityId && best < g_battleChars.levelEntries[gf].level) {
+                    best = g_battleChars.levelEntries[gf].level;
+                }
+            }
+        }
+    }
+    return best;
+}
 
 /**
  * @brief Return GF/summon data address if enabled, else return 0.
@@ -274,8 +336,8 @@ void func_801E6060(u8 *a0) {
 /**
  * @brief Wrapper that calls func_80023B14.
  */
-void func_801E60C4(void) {
-    func_80023B14();
+s32 func_801E60C4(s32 id) {
+    return func_80023B14(id);
 }
 
 /** @brief Call addItemToInventory then func_800370AC with same argument. */
@@ -315,9 +377,86 @@ void func_801E6168(s32 a0, s32 a1) {
     }
 }
 
-INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E61B4);
+s32 GetMaxConvertCount(ExtMenuCtx *ctx) {
+    s32 dstCount;
+    ExtEntry *entry = &ctx->entries[ctx->entryIdx];
+    s32 srcCount;
+    s32 srcId = entry->srcId;
+    s32 dstId = entry->dstId;
+    s32 yield = entry->yield;
+    s32 cost = entry->cost;
+    s32 charIdx = ctx->charIdx;
 
-INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E6338);
+    switch (ctx->mode) {
+    case 0:
+        srcCount = func_801E5FA8(srcId, ctx->unk30);
+        dstCount = func_801E5F48(charIdx, dstId);
+        break;
+    case 1:
+        srcCount = func_801E5FA8(srcId, ctx->unk30);
+        dstCount = func_801E5FA8(dstId, ctx->unk30);
+        break;
+    case 2:
+        srcCount = func_801E5F48(charIdx, srcId);
+        dstCount = func_801E5F48(charIdx, dstId);
+        break;
+    case 3:
+        srcCount = func_801E5FA8(srcId, ctx->unk30);
+        dstCount = func_801E5FA8(dstId, ctx->unk30);
+        break;
+    case 4:
+        srcCount = func_801E60C4(srcId);
+        dstCount = func_801E5FA8(dstId, ctx->unk34);
+        break;
+    }
+    ctx->srcCount = srcCount;
+    ctx->dstCount = dstCount;
+    if (dstCount == 100) {
+        return 0;
+    }
+    dstCount = 100 - dstCount;
+    if (yield == 0) {
+        yield = 1;
+    }
+    srcCount /= cost;
+    dstCount = (dstCount + yield - 1) / yield;
+    return dstCount > srcCount ? srcCount : dstCount;
+}
+
+s32 func_801E6338(s32 spellId, s32 charMask) {
+    CharacterData *ch;
+    s32 fullMask = 0;
+    s32 bit;
+    s32 used;
+    s32 c;
+    s32 i;
+
+    for (c = 0; c < 8; c++) {
+        bit = 1 << c;
+        if (charMask & bit) {
+            ch = &g_gameState.chars[c];
+            used = 0;
+            D_801E8C10[c] = 0;
+            for (i = 0; i < MAGIC_SLOT_COUNT; i++) {
+                s32 id = ch->magic[i].magicId;
+                s32 qty = ch->magic[i].quantity;
+
+                if (id != 0 && qty != 0) {
+                    used |= 1 << i;
+                }
+                if (spellId == id && qty != 0) {
+                    D_801E8C10[c] = ch->magic[i].quantity;
+                    used = 0;
+                }
+            }
+            if (used == -1) {
+                D_801E8C10[c] = 0xFF;
+                fullMask |= 1 << c;
+            }
+        }
+    }
+    return fullMask != charMask;
+}
 
 /**
  * @brief Evaluate an extension entry's compatibility level.
@@ -375,9 +514,72 @@ INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E76D4);
 
 INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E7858);
 
-INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E79C8);
+s32 func_801E79C8(ExtMenuCtx *ext, s32 ctx, s32 dl, s32 x, s32 y) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
+    s32 arrowX;
 
-INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E7B00);
+    if (ext->mode != 4) {
+        cfg->iconType = 0x4C;
+        arrowX = 28;
+    } else {
+        cfg->iconType = 0x59;
+        arrowX = 40;
+    }
+    cfg->w = 166;
+    cfg->h = 160;
+    cfg->iconSubType = 0;
+    cfg->x = x;
+    cfg->y = y;
+    cfg->columnCount = 11;
+    cfg->pageStart = ext->pageStart;
+    cfg->pageEnd = ext->pageEnd;
+    cfg->scrollOffset = ext->scroll;
+    cfg->dataPtr = (s32)ext;
+    if (ext->unk52 >= 2) {
+        dl = func_801F5EFC(ctx, dl, x + arrowX, y, g_menuTint[MENU_TINT_NORMAL], ext->pageStart);
+        dl = func_801F5F60(ctx, dl, g_menuTint[MENU_TINT_NORMAL], 3);
+    }
+    if (ext->mode == 4) {
+        dl = func_801EFBB4(ctx, dl, func_801E7858);
+    } else {
+        dl = func_801EFBB4(ctx, dl, func_801E76D4);
+    }
+    return dl;
+}
+
+s32 func_801E7B00(s32 ctx, s32 dl, s32 page, s32 row, s32 xOffset) {
+    ExtMenuCtx *ext;
+    s32 charId;
+    s32 magicId;
+    s32 quantity;
+    s32 x;
+    s32 y;
+    s32 textY;
+    s32 color;
+
+    magicId = page * 4 + row;
+    charId = g_menuDisplayCfg.itemId;
+    ext = (ExtMenuCtx *)g_menuDisplayCfg.dataPtr;
+    quantity = g_gameState.chars[charId].magic[magicId].quantity;
+    magicId = g_gameState.chars[charId].magic[magicId].magicId;
+    x = g_menuDisplayCfg.x + xOffset;
+    y = g_menuDisplayCfg.y + row * 13;
+
+    if (quantity != 0 && magicId != 0) {
+        if (func_801F1CE8(charId, magicId)) {
+            textY = y + 7;
+            dl = drawIcon(ctx, dl, ICON_JUNCTION_MARK, x + 97, textY, g_menuTint[MENU_TINT_NORMAL]);
+        }
+        color = func_801E76A8(func_801E5B88(ext->mode, ext->entries, ext->entryCount, magicId, quantity, ext->unk47));
+        /* Reusing page for text X coordinates is required for the match. */
+        page = x + 12;
+        textY = y + 7;
+        dl = func_801F0FEC(ctx, dl, page, textY, getMagicNamePtr(magicId), color);
+        page = x + 142;
+        dl = drawNumberMenuTint(ctx, dl, (textY << 16) | (page & 0xFFFF), quantity, color);
+    }
+    return dl;
+}
 
 INCLUDE_ASM("asm/ovl/menuext/nonmatchings/menuext", func_801E7C9C);
 
@@ -428,18 +630,7 @@ void func_801E7E38(u8 *a0, s32 a1, s32 a2, s32 a3, s32 arg5) {
     }
 }
 
-/** @brief Extension menu context — character/magic IDs plus state byte. */
-typedef struct {
-    /* 0x00 */ u8 pad00[0x48];
-    /* 0x48 */ u8 charIdx;        /**< Character index into g_gameState.chars. */
-    /* 0x49 */ u8 pad49[2];
-    /* 0x4B */ u8 magicId;        /**< Magic id (input to getMagicNamePtr). */
-    /* 0x4C */ u8 pad4C[7];
-    /* 0x53 */ u8 state;          /**< Render state (0xFF = inactive). */
-} ExtMenuCtx;
-
 extern u8 *getCharName(s32 charId);
-extern u8 *getMagicNamePtr(s32 magicId);
 
 /**
  * @brief Render a character/magic equipment row + selection highlight.

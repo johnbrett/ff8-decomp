@@ -4,10 +4,36 @@
 #include "psxsdk/libgpu.h"
 #include "psxsdk/libetc.h"
 
+typedef struct {
+    /* 0x00 */ s16 x;
+    /* 0x02 */ s16 y;
+    /* 0x04 */ s16 value;
+    /* 0x06 */ s16 unk06;
+} MenuTextMarker;
+
+typedef union {
+    /* 0x00 */ s32 packed;
+    /* 0x00 */ struct {
+        /* 0x00 */ u16 page;
+    } entry;
+} TipsHistoryValue;
+
+typedef struct {
+    /* 0x00 */ u8 pad00[16];
+    /* 0x10 */ u16 state;
+    /* 0x12 */ u8 pad12[18];
+    /* 0x24 */ s16 intensity;
+    /* 0x26 */ s16 unk26;
+    /* 0x28 */ u16 page;
+    /* 0x2A */ s16 visible;
+    /* 0x2C */ u8 pad2C[16];
+    /* 0x3C */ TipsHistoryValue history;
+} TipsMenuState;
+
 extern u8 D_801ED430[];
 extern s16 D_801ED630;
 extern s16 D_801EC410;
-extern u8 D_801EC310[];
+extern MenuTextMarker D_801EC310[];
 extern u8 D_801EC420[];
 extern u16 D_801EC412;
 extern u16 D_801EC414;
@@ -17,9 +43,11 @@ extern u8 D_801E8310[];
 extern s16 D_801ED420;
 extern s16 D_801ED422;
 
-void func_801E5A10(void *);
+static void UpdateTipsMenu(TipsMenuState *);
+s32 func_801E6474(s32);
+void func_801E64B0(s32);
 extern s8 D_801E6B0C;
-extern s8 D_801E6B10[];
+extern u8 D_801E6B10[];
 
 /** @brief Look up string @p a0 in menu text category 0xD. */
 u8 *func_801E5800(s32 a0) {
@@ -189,7 +217,181 @@ void func_801E597C(s32 a0) {
     D_801EC410 = func_801E6018(buf + 1, (s32)D_801E8310, (s32)D_801EC310);
 }
 
-INCLUDE_ASM("asm/ovl/menutips/nonmatchings/menutips", func_801E5A10);
+static void UpdateTipsMenu(TipsMenuState *state) {
+    u16 inputRepeat = g_menuDisplayCfg.inputRepeat;
+    u16 inputNew = g_menuDisplayCfg.inputNew;
+    s32 page;
+    u16 *phase = &state->state;
+
+    switch (*phase) {
+    case 0:
+        state->intensity = 0;
+        state->unk26 = 0;
+        *phase = 1;
+        break;
+    case 1:
+        if (pollCdReadStatus() == 0) {
+            *phase = 2;
+        }
+        break;
+    case 2:
+        func_801E64B0(0);
+        *phase = 3;
+        break;
+    case 3:
+        if (pollCdReadStatus() == 0) {
+            *phase = 4;
+        }
+        break;
+    case 4:
+        func_801E597C(0);
+        state->visible = 1;
+        *phase = 5;
+        break;
+    case 5:
+        state->intensity += 256;
+        state->unk26 += 256;
+        if (state->intensity >= 4096) {
+            state->intensity = 4096;
+            state->unk26 = 4096;
+            *phase = 6;
+        }
+        func_801E590C(1, 0);
+        break;
+    case 6:
+        *phase = 7;
+    case 7:
+        if (D_801EC410 != 0) {
+            D_801E6B10[state->page] = func_801F6768(inputRepeat, D_801EC410, D_801E6B10[state->page]);
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        if ((inputNew & PADRdown) && D_801EC410 != 0) {
+            sendSpuCommand(2);
+            *phase = 8;
+        }
+        if (inputNew & PADRup) {
+            sendSpuCommand(3);
+            *phase = 12;
+        }
+        if ((inputNew & PADLright) && D_801EC416 != 0xFFFF) {
+            sendSpuCommand(2);
+            *phase = 16;
+        }
+        if ((inputNew & PADLleft) && D_801EC414 != 0xFFFF) {
+            sendSpuCommand(2);
+            *phase = 14;
+        }
+        if (inputNew & PADRleft) {
+            state->history.packed = func_801E58C0();
+            if (state->history.packed >= 0) {
+                sendSpuCommand(2);
+                *phase = 10;
+            } else {
+                sendSpuCommand(5);
+            }
+        }
+        break;
+    case 8:
+        func_801E64B0(D_801EC310[D_801E6B10[state->page]].value);
+        func_801E582C(state->page, D_801E6B10[state->page]);
+        func_801E590C(1, D_801E6B10[state->page]);
+        *phase = 9;
+        break;
+    case 9:
+        if (func_801E6474(D_801EC310[D_801E6B10[state->page]].value)) {
+            page = D_801EC310[D_801E6B10[state->page]].value;
+            func_801E597C(page);
+            state->page = page;
+            *phase = 6;
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 10:
+        func_801E64B0(state->history.entry.page);
+        func_801E590C(1, D_801E6B10[state->page]);
+        *phase = 11;
+        break;
+    case 11:
+        if (func_801E6474(state->history.entry.page)) {
+            page = state->history.entry.page;
+            func_801E597C(page);
+            state->page = page;
+            D_801E6B10[state->page] = state->history.packed >> 16;
+            *phase = 6;
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 12:
+        if (D_801EC412 == 0xFFFF) {
+            *phase = 18;
+        } else {
+            func_801E582C(state->page, D_801E6B10[state->page]);
+            func_801E64B0(D_801EC412);
+            *phase = 13;
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 13:
+        if (func_801E6474(D_801EC412)) {
+            state->page = D_801EC412;
+            func_801E597C(D_801EC412);
+            *phase = 6;
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 14:
+        func_801E582C(state->page, D_801E6B10[state->page]);
+        func_801E64B0(D_801EC414);
+        *phase = 15;
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 15:
+        if (func_801E6474(D_801EC414)) {
+            state->page = D_801EC414;
+            func_801E597C(D_801EC414);
+            *phase = 6;
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 16:
+        func_801E582C(state->page, D_801E6B10[state->page]);
+        func_801E64B0(D_801EC416);
+        *phase = 17;
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 17:
+        if (func_801E6474(D_801EC416)) {
+            state->page = D_801EC416;
+            func_801E597C(D_801EC416);
+            *phase = 6;
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 18:
+        *phase = 19;
+    case 19:
+        state->intensity -= 256;
+        state->unk26 -= 256;
+        if (state->intensity <= 0) {
+            state->intensity = 0;
+            *phase = 20;
+        }
+        func_801E590C(1, D_801E6B10[state->page]);
+        break;
+    case 20:
+        if (pollCdReadStatus() == 0) {
+            *phase = 21;
+        }
+        break;
+    case 21:
+        func_801F18FC(state);
+        func_801F0BB0();
+        break;
+    }
+    setTextBrightness(state->intensity);
+    func_801F1DB0(state->intensity);
+    func_801F0948(state->intensity);
+}
 
 /**
  * Number display format parameters, returned by getMenuString.
@@ -293,7 +495,7 @@ INCLUDE_ASM("asm/ovl/menutips/nonmatchings/menutips", func_801E6018);
  *
  * @return 1 if tips system was not ready (selection saved), 0 otherwise.
  */
-s32 func_801E6474(void) {
+s32 func_801E6474(s32 page) {
     if (pollCdReadStatus() == 0) {
         D_801ED420 = D_801ED422;
         return 1;
@@ -556,7 +758,7 @@ void func_801E696C(void) {
 
     DrawSync(0);
     VSync(0);
-    work = func_801F179C(func_801E5A10, func_801E67F4);
+    work = func_801F179C(UpdateTipsMenu, func_801E67F4);
     for (i = 0; i < 0x1000; i++) {
         D_801E6B10[i] = 0;
     }
@@ -575,6 +777,6 @@ void func_801E696C(void) {
     D_801EC410 = 0;
     func_801F1D34(&D_801E6B0C);
     func_801F1DB0(0);
-    func_801E5A10(work);
+    UpdateTipsMenu(work);
     D_801ED630 = 0;
 }

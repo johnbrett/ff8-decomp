@@ -1,5 +1,5 @@
 func_801E597C = 0x801E597C; // type:func
-func_801E5A10 = 0x801E5A10; // type:func
+UpdateTipsMenu = 0x801E5A10; // type:func
 func_801E6018 = 0x801E6018; // type:func
 func_801E6474 = 0x801E6474; // type:func
 func_801E64B0 = 0x801E64B0; // type:func
