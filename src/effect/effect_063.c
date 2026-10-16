@@ -55,13 +55,3 @@ INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A3A5C);
 INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A3C8C);
 
 INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A3D14);
-
-INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A3E48);
-
-INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A3F04);
-
-INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A3FD4);
-
-INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A46EC);
-
-INCLUDE_ASM("asm/ovl/effect_063/nonmatchings/effect_063", func_801A489C);

@@ -1945,6 +1945,7 @@ binaries:
     target_path: original/effect/effect_063.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_063.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_063
     type: code
@@ -1952,6 +1953,8 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_063]
+    - [0x3e48, c, lib/screentint]
+    - [0x3f04, c, effect_063_tail]
     - [0x4998, bin, effect_063]
   - [0x36810]
 - name: effect_064
@@ -3269,13 +3272,16 @@ binaries:
     target_path: original/effect/effect_151.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_151.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_151
     type: code
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_151]
+    - [0x0, c, effect_151_start]
+    - [0x1a78, c, lib/projectedgradientline]
+    - [0x1b98, c, effect_151]
     - [0x41A8, bin, effect_151]
   - [0x40624]
 - name: effect_152

@@ -1,0 +1,2 @@
+DrawProjectedGradientLine = 0x801A1A78; // type:func
+g_effectGradientLineCursor = 0x801E1488;
