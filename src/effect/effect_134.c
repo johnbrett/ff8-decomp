@@ -3,6 +3,11 @@
  * @brief Beam Laser
  */
 #include "common.h"
+#include "battle.h"
+#include "battle/bc_object9.h"
+#include "battle/bc_object15.h"
+extern BattleSpriteAnim D_801A4044;
+extern void *D_801D2538;
 
 INCLUDE_ASM("asm/ovl/effect_134/nonmatchings/effect_134", func_801A0000);
 
@@ -50,7 +55,25 @@ INCLUDE_ASM("asm/ovl/effect_134/nonmatchings/effect_134", func_801A298C);
 
 INCLUDE_ASM("asm/ovl/effect_134/nonmatchings/effect_134", func_801A2F48);
 
-INCLUDE_ASM("asm/ovl/effect_134/nonmatchings/effect_134", func_801A2FB0);
+s32 func_801A2FB0(BattleSpriteParticle *particle) {
+    BattleSpritePrim *prim;
+    s16 frame;
+    void *head;
+    prim = func_800B3698(sizeof(BattleSpritePrim));
+    func_800C96E4(&particle->pos.vector, 3072, -768);
+    prim->anim = &D_801A4044;
+    prim->frame = particle->pos.fields.frame;
+    prim->flags = 0;
+    head = D_801D2538;
+    D_801D2538 = func_800C9E10(prim, D_800FA5E8->ot, 2, head);
+    func_800B36B8(sizeof(BattleSpritePrim));
+    frame = particle->pos.fields.frame + 1;
+    particle->pos.vector.vx += particle->velocityX;
+    particle->pos.vector.vy += particle->velocityY;
+    particle->pos.vector.vz += particle->velocityZ;
+    particle->pos.fields.frame = frame;
+    return (frame > 15) * 2;
+}
 
 INCLUDE_ASM("asm/ovl/effect_134/nonmatchings/effect_134", func_801A3088);
 

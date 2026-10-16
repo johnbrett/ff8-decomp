@@ -3,6 +3,8 @@
  * @brief Devour
  */
 #include "common.h"
+#include "effect.h"
+extern void func_801A18EC(s16 x, s16 y, s16 textureX, s16 textureY, s16 width, s16 height, s16 u, s16 v, s16 clutX, s16 clutY, s16 shade, s16 blend);
 
 INCLUDE_ASM("asm/ovl/effect_062/nonmatchings/effect_062", func_801A0000);
 
@@ -91,7 +93,11 @@ INCLUDE_ASM("asm/ovl/effect_062/nonmatchings/effect_062", func_801A1CF8);
 
 INCLUDE_ASM("asm/ovl/effect_062/nonmatchings/effect_062", func_801A1D90);
 
-INCLUDE_ASM("asm/ovl/effect_062/nonmatchings/effect_062", func_801A1E50);
+void func_801A1E50(EffectEntity *entity) {
+    s16 x = entity->pos.vx;
+    func_801A18EC(x += 96, 16, 384, 256, 256, 40, 0, 216, 320, 241, entity->unk050, 1);
+    func_801A18EC(x += 256, 16, 512, 256, 192, 40, 0, 216, 320, 241, entity->unk050, 1);
+}
 
 INCLUDE_ASM("asm/ovl/effect_062/nonmatchings/effect_062", func_801A1F44);
 

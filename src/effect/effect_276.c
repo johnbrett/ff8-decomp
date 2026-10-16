@@ -3,6 +3,11 @@
  * @brief X-ATM092 Death
  */
 #include "common.h"
+#include "battle.h"
+#include "battle/bc_object9.h"
+#include "battle/bc_object15.h"
+extern BattleSpriteAnim D_801A7490;
+extern void *D_801D6B48;
 
 INCLUDE_ASM("asm/ovl/effect_276/nonmatchings/effect_276", func_801A0000);
 
@@ -60,7 +65,26 @@ INCLUDE_ASM("asm/ovl/effect_276/nonmatchings/effect_276", func_801A3A78);
 
 INCLUDE_ASM("asm/ovl/effect_276/nonmatchings/effect_276", func_801A3BC0);
 
-INCLUDE_ASM("asm/ovl/effect_276/nonmatchings/effect_276", func_801A3D5C);
+s32 func_801A3D5C(BattleSpriteParticle *particle) {
+    BattleSpritePrim *prim;
+    s16 frame;
+    void *head;
+    prim = func_800B3698(sizeof(BattleSpritePrim));
+    func_800C96E4(&particle->pos.vector, particle->scale, -(particle->scale >> 2));
+    prim->anim = &D_801A7490;
+    prim->frame = particle->pos.fields.frame >> 1;
+    prim->flags = 0;
+    head = D_801D6B48;
+    D_801D6B48 = func_800C9E10(prim, D_800FA5E8->ot, 2, head);
+    func_800B36B8(sizeof(BattleSpritePrim));
+    frame = particle->pos.fields.frame + 1;
+    particle->pos.vector.vx += particle->velocityX;
+    particle->pos.vector.vy += particle->velocityY;
+    particle->pos.vector.vz += particle->velocityZ;
+    particle->velocityY += 16;
+    particle->pos.fields.frame = frame;
+    return (frame > 15) * 2;
+}
 
 INCLUDE_ASM("asm/ovl/effect_276/nonmatchings/effect_276", func_801A3E54);
 

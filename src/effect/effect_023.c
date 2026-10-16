@@ -3,6 +3,15 @@
  * @brief Psycho Blast
  */
 #include "common.h"
+#include "effect.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad000[48];
+    /* 0x30 */ MATRIX rotation;
+    /* 0x50 */ VECTOR scale;
+} PsychoBlastTransform;
+
+extern EffectModel *D_801D8754;
 
 INCLUDE_ASM("asm/ovl/effect_023/nonmatchings/effect_023", func_801A0000);
 
@@ -311,7 +320,20 @@ INCLUDE_ASM("asm/ovl/effect_023/nonmatchings/effect_023", func_801AD658);
 
 INCLUDE_ASM("asm/ovl/effect_023/nonmatchings/effect_023", func_801AD784);
 
-INCLUDE_ASM("asm/ovl/effect_023/nonmatchings/effect_023", func_801AD7E8);
+static void GetPsychoBlastOffsetPosition(PsychoBlastTransform *transform, SVECTOR *out) {
+    SVECTOR offset;
+    MATRIX rotation;
+
+    offset.vx = 0;
+    offset.vy = 0;
+    offset.vz = -512;
+    rotation = transform->rotation;
+    ScaleMatrix(&rotation, &transform->scale);
+    ApplyMatrixSV(&rotation, &offset, &offset);
+    out->vx = D_801D8754->unk030.vx + offset.vx;
+    out->vy = D_801D8754->unk030.vy + offset.vy;
+    out->vz = D_801D8754->unk030.vz + offset.vz;
+}
 
 INCLUDE_ASM("asm/ovl/effect_023/nonmatchings/effect_023", func_801AD8CC);
 

@@ -4,6 +4,28 @@
 #include "common.h"
 #include "psxsdk/libgte.h"
 
+typedef union {
+    SVECTOR vector;
+    struct {
+        /* 0x00 */ s16 x;
+        /* 0x02 */ s16 y;
+        /* 0x04 */ s16 z;
+        /* 0x06 */ s16 frame;
+    } fields;
+} BattleSpriteParticlePosition;
+
+typedef struct {
+    /* 0x00 */ u8 unk00[12];
+    /* 0x0C */ BattleSpriteParticlePosition pos;
+    /* 0x14 */ s16 velocityX;
+    /* 0x16 */ s16 velocityY;
+    /* 0x18 */ s16 velocityZ;
+    /* 0x1A */ s16 scale;
+    /* 0x1C */ s16 accelerationX;
+    /* 0x1E */ s16 accelerationY;
+    /* 0x20 */ s16 accelerationZ;
+} BattleSpriteParticle;
+
 /**
  * @file
  * @brief Battle sprite primitives: animated sprite sets drawn from a table.

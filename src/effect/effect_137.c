@@ -3,12 +3,38 @@
  * @brief Oil Blast
  */
 #include "common.h"
+#include "battle.h"
+#include "battle/bc_object9.h"
+#include "battle/bc_object15.h"
+extern BattleSpriteAnim D_801A4B90;
+extern void *D_801D6EF0;
 
 INCLUDE_ASM("asm/ovl/effect_137/nonmatchings/effect_137", func_801A0000);
 
 INCLUDE_ASM("asm/ovl/effect_137/nonmatchings/effect_137", func_801A0020);
 
-INCLUDE_ASM("asm/ovl/effect_137/nonmatchings/effect_137", func_801A00A8);
+s32 func_801A00A8(BattleSpriteParticle *particle) {
+    BattleSpritePrim *prim;
+    s16 frame;
+    void *head;
+    func_800C96E4(&particle->pos.vector, particle->scale, -(particle->scale >> 2));
+    prim = func_800B3698(sizeof(BattleSpritePrim));
+    prim->anim = &D_801A4B90;
+    prim->frame = particle->pos.fields.frame;
+    prim->flags = 0;
+    head = D_801D6EF0;
+    D_801D6EF0 = func_800C9E10(prim, D_800FA5E8->ot, 2, head);
+    func_800B36B8(sizeof(BattleSpritePrim));
+    frame = particle->pos.fields.frame + 1;
+    particle->velocityX += particle->accelerationX;
+    particle->velocityY += particle->accelerationY;
+    particle->velocityZ += particle->accelerationZ;
+    particle->pos.fields.frame = frame;
+    particle->pos.vector.vx += particle->velocityX;
+    particle->pos.vector.vy += particle->velocityY;
+    particle->pos.vector.vz += particle->velocityZ;
+    return (frame > 11) * 2;
+}
 
 INCLUDE_ASM("asm/ovl/effect_137/nonmatchings/effect_137", func_801A01B8);
 

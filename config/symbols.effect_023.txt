@@ -1,0 +1,1 @@
+GetPsychoBlastOffsetPosition = 0x801AD7E8;
