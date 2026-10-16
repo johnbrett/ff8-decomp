@@ -1,0 +1,1 @@
+EmitFlatTexturedTriangle = 0x80190BA4; // type:func

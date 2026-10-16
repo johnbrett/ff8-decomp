@@ -4,32 +4,6 @@
  */
 #include "common.h"
 
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190000);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190294);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_8019031C);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_8019034C);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_801903C0);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_801904B0);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_801905B8);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_8019064C);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190750);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_801907A4);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190950);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190A90);
-
-INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190BA4);
-
 INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190C94);
 
 INCLUDE_ASM("asm/ovl/effect_330/nonmatchings/effect_330", func_80190DE0);

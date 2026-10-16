@@ -4,22 +4,6 @@
  */
 #include "common.h"
 
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A0000);
-
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A0114);
-
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A01A8);
-
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A02AC);
-
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A0300);
-
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A04AC);
-
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A05EC);
-
-INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A0700);
-
 INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A07F0);
 
 INCLUDE_ASM("asm/ovl/effect_189/nonmatchings/effect_189", func_801A093C);

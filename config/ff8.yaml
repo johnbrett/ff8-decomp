@@ -3296,6 +3296,7 @@ binaries:
 - name: effect_153
   sha1: 0575fad7531f1b980a5330e28aab87388e912f3e
   options:
+    section_order: [.text, .rodata, .data, .bss]
     target_path: original/effect/effect_153.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_153.txt]
@@ -3305,7 +3306,9 @@ binaries:
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_153]
+    - [0x0, c, effect_153_entry]
+    - [0x6E0, c, lib/flattexturedtriangle]
+    - [0x7D0, c, effect_153]
     - [0x3598, .rodata, effect_153]
     - [0x35B0, bin, effect_153]
   - [0x1EF00]
@@ -3448,6 +3451,7 @@ binaries:
 - name: effect_165
   sha1: 7ce28a2f36fc01c76af53bb628a6ea1f757e83d5
   options:
+    section_order: [.text, .rodata, .data, .bss]
     target_path: original/effect/effect_165.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_165.txt]
@@ -3457,7 +3461,9 @@ binaries:
     start: 0x0
     vram: 0x801B0000
     subsegments:
-    - [0x0, c, effect_165]
+    - [0x0, c, effect_165_entry]
+    - [0x24F4, c, lib/flattexturedtriangle]
+    - [0x25E4, c, effect_165]
     - [0xE1C4, .rodata, effect_165]
     - [0xE208, bin, effect_165]
   - [0x40930]
@@ -3744,6 +3750,7 @@ binaries:
 - name: effect_185
   sha1: ac513d1515e7f9bc337e68364899ec3f486e0126
   options:
+    section_order: [.text, .rodata, .data, .bss]
     target_path: original/effect/effect_185.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_185.txt]
@@ -3753,7 +3760,9 @@ binaries:
     start: 0x0
     vram: 0x80190000
     subsegments:
-    - [0x0, c, effect_185]
+    - [0x0, c, effect_185_entry]
+    - [0x24E8, c, lib/flattexturedtriangle]
+    - [0x25D8, c, effect_185]
     - [0xDA90, .rodata, effect_185]
     - [0xDAD4, bin, effect_185]
   - [0x54ABC]
@@ -3806,6 +3815,7 @@ binaries:
 - name: effect_189
   sha1: d725c7fd5595443d8b943e42b667d255410a529a
   options:
+    section_order: [.text, .rodata, .data, .bss]
     target_path: original/effect/effect_189.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_189.txt]
@@ -3815,7 +3825,9 @@ binaries:
     start: 0x0
     vram: 0x801A0000
     subsegments:
-    - [0x0, c, effect_189]
+    - [0x0, c, effect_189_entry]
+    - [0x700, c, lib/flattexturedtriangle]
+    - [0x7F0, c, effect_189]
     - [0x5624, .rodata, effect_189]
     - [0x563C, bin, effect_189]
   - [0x17958]
@@ -5908,6 +5920,7 @@ binaries:
 - name: effect_328
   sha1: 383bcc254841ccab7576e64e3d58395f8b83d4ee
   options:
+    section_order: [.text, .rodata, .data, .bss]
     target_path: original/effect/effect_328.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_328.txt]
@@ -5917,13 +5930,16 @@ binaries:
     start: 0x0
     vram: 0x80190000
     subsegments:
-    - [0x0, c, effect_328]
+    - [0x0, c, effect_328_entry]
+    - [0xBA4, c, lib/flattexturedtriangle]
+    - [0xC94, c, effect_328]
     - [0xF220, .rodata, effect_328]
     - [0xF264, bin, effect_328]
   - [0x5259C]
 - name: effect_329
   sha1: 383bcc254841ccab7576e64e3d58395f8b83d4ee
   options:
+    section_order: [.text, .rodata, .data, .bss]
     target_path: original/effect/effect_329.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_329.txt]
@@ -5933,13 +5949,16 @@ binaries:
     start: 0x0
     vram: 0x80190000
     subsegments:
-    - [0x0, c, effect_329]
+    - [0x0, c, effect_329_entry]
+    - [0xBA4, c, lib/flattexturedtriangle]
+    - [0xC94, c, effect_329]
     - [0xF220, .rodata, effect_329]
     - [0xF264, bin, effect_329]
   - [0x5259C]
 - name: effect_330
   sha1: 383bcc254841ccab7576e64e3d58395f8b83d4ee
   options:
+    section_order: [.text, .rodata, .data, .bss]
     target_path: original/effect/effect_330.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_330.txt]
@@ -5949,7 +5968,9 @@ binaries:
     start: 0x0
     vram: 0x80190000
     subsegments:
-    - [0x0, c, effect_330]
+    - [0x0, c, effect_330_entry]
+    - [0xBA4, c, lib/flattexturedtriangle]
+    - [0xC94, c, effect_330]
     - [0xF220, .rodata, effect_330]
     - [0xF264, bin, effect_330]
   - [0x5259C]
