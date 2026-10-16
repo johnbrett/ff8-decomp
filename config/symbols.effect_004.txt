@@ -1,0 +1,1 @@
+SpawnDoubleParticle = 0x801A3E54; // type:func

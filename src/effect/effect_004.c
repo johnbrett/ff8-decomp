@@ -3,6 +3,42 @@
  * @brief Double
  */
 #include "common.h"
+#include "effect.h"
+
+typedef struct DoubleTask {
+    /* 0x00 */ u8 taskHeader[12];
+    /* 0x0C */ EffectAnimSet *animSet;
+    /* 0x10 */ EffectModel *model;
+    /* 0x14 */ EffectModel *linkedModel;
+    /* 0x18 */ struct DoubleTask *owner;
+    /* 0x1C */ SVECTOR pos;
+    /* 0x24 */ u8 pad024[12];
+    /* 0x30 */ s32 scaleX;
+    /* 0x34 */ s32 scaleY;
+    /* 0x38 */ s32 scaleZ;
+    /* 0x3C */ u8 pad03C[10];
+    /* 0x46 */ s16 unk046;
+    /* 0x48 */ u8 pad048[4];
+    /* 0x4C */ BattleSpriteAnim *anim;
+    /* 0x50 */ s16 frame;
+    /* 0x52 */ u8 pad052[2];
+    /* 0x54 */ SVECTOR origin;
+    /* 0x5C */ s16 unk05C;
+    /* 0x5E */ s16 unk05E;
+    /* 0x60 */ u8 pad060[2];
+    /* 0x62 */ s16 unk062;
+    /* 0x64 */ s16 unk064;
+    /* 0x66 */ u8 pad066[4];
+    /* 0x6A */ s16 unk06A;
+} DoubleTask;
+
+extern u8 D_801D4A94[];
+extern BattleSpriteAnim D_801A5CB0;
+
+void func_801A46AC(DoubleTask *task);
+DoubleTask *func_801A09B4(void *pool, void (*step)(DoubleTask *), s32 size,
+                        DoubleTask *owner);
+void func_801A0C74(DoubleTask *task, SVECTOR *out);
 
 INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A0000);
 
@@ -109,7 +145,27 @@ INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A3CD4);
 
 INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A3DB0);
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A3E54);
+static void SpawnDoubleParticle(DoubleTask *owner) {
+    DoubleTask *task;
+
+    task = func_801A09B4(D_801D4A94, func_801A46AC, sizeof(DoubleTask), owner);
+    task->unk062 = ONE;
+    task->unk064 = 0;
+    task->unk05E = owner->unk05E;
+    task->unk06A = owner->unk06A;
+    func_801A0C74(task, &task->pos);
+    task->pos.vy -= 640;
+    task->origin = task->pos;
+    task->unk05C = owner->unk05C;
+    task->unk046 = owner->unk05C;
+    /* The intervening calls can change the owner. */
+    task->unk06A = owner->unk06A;
+    task->anim = &D_801A5CB0;
+    task->frame = ONE;
+    task->scaleX = 16;
+    task->scaleY = 16;
+    task->scaleZ = 16;
+}
 
 INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A3F40);
 

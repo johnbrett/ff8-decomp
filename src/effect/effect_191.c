@@ -3,6 +3,27 @@
  * @brief Doomtrain Summon (Runaway Train)
  */
 #include "common.h"
+#include "effect.h"
+#include "battle/bc_object9.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ s16 age;
+    /* 0x0E */ s16 side;
+    /* 0x10 */ s16 x;
+    /* 0x12 */ s16 y;
+    /* 0x14 */ s16 z;
+    /* 0x16 */ s16 duration;
+    /* 0x18 */ s16 rotation;
+    /* 0x1A */ s16 unk01A;
+    /* 0x1C */ s16 scale;
+    /* 0x1E */ u8 pad01E[2];
+    /* 0x20 */ s16 unk020;
+} DoomtrainTask;
+
+extern u8 D_801A8668[];
+
+s32 func_8019481C(DoomtrainTask *task);
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_80190000);
 
@@ -96,7 +117,32 @@ INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_801946C0);
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_8019481C);
 
-INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_80194B54);
+static void StartDoomtrainPair(void) {
+    DoomtrainTask *task;
+
+    task = func_800B2A84(D_801A8668, func_8019481C);
+    task->age = 0;
+    task->side = 0;
+    task->x = 3200;
+    task->y = 0;
+    task->z = -3200;
+    task->duration = 103;
+    task->rotation = -1024;
+    task->unk01A = 1;
+    task->scale = ONE;
+    task->unk020 = 1;
+    task = func_800B2A84(D_801A8668, func_8019481C);
+    task->age = 0;
+    task->side = 1;
+    task->x = -3200;
+    task->y = 0;
+    task->z = 3200;
+    task->duration = 103;
+    task->rotation = 1024;
+    task->unk01A = 1;
+    task->scale = ONE;
+    task->unk020 = 0;
+}
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_80194C30);
 

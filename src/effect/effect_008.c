@@ -3,6 +3,21 @@
  * @brief Doom
  */
 #include "common.h"
+#include "psxsdk/libc.h"
+#include "psxsdk/libgte.h"
+
+typedef struct {
+    /* 0x00 */ u8 unk00[41];
+    /* 0x29 */ u8 pc;
+    /* 0x2A */ u8 unk2A[6];
+    /* 0x30 */ VECTOR scale;
+    /* 0x40 */ u8 unk40[4];
+    /* 0x44 */ SVECTOR rotation;
+    /* 0x4C */ void *model;
+    /* 0x50 */ s16 unk50;
+} DoomObject;
+
+extern u8 D_801B3AFC[];
 
 INCLUDE_ASM("asm/ovl/effect_008/nonmatchings/effect_008", func_801A0000);
 
@@ -524,7 +539,15 @@ void func_801B245C(void) {
 
 INCLUDE_ASM("asm/ovl/effect_008/nonmatchings/effect_008", func_801B2464);
 
-INCLUDE_ASM("asm/ovl/effect_008/nonmatchings/effect_008", func_801B2504);
+void func_801B2504(DoomObject *entity) {
+    entity->model = D_801B3AFC;
+    entity->scale.vx = entity->scale.vy = entity->scale.vz = rand() % 1023 + 3072;
+    entity->unk50 = ONE;
+    entity->rotation.vy = rand() & 0xFFF;
+    entity->rotation.vx = rand() % 768 - 384;
+    entity->rotation.vz = rand() % 768 - 384;
+    entity->pc++;
+}
 
 INCLUDE_ASM("asm/ovl/effect_008/nonmatchings/effect_008", func_801B2608);
 
