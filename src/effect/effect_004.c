@@ -3,6 +3,50 @@
  * @brief Double
  */
 #include "common.h"
+#include "effect.h"
+
+/* Handshake values exchanged with the partner task's unk058. */
+#define TASK_SYNC_SIGNAL 1
+#define TASK_SYNC_ACK 2
+#define TASK_SYNC_RELEASE 3
+
+typedef struct {
+    /* 0x00 */ u8 pad000[0x14];
+    /* 0x14 */ EffectEntity *partner;
+    /* 0x18 */ u8 pad018[0x26 - 0x18];
+    /* 0x26 */ u16 flags;
+    /* 0x28 */ u8 wait;
+    /* 0x29 */ u8 pc;
+    /* 0x2A */ u8 pad02A[0x30 - 0x2A];
+    /* 0x30 */ VECTOR scale;
+    /* 0x40 */ CVECTOR color;
+    /* 0x44 */ u8 pad044[0x50 - 0x44];
+    /* 0x50 */ s16 unk050;
+    /* 0x52 */ u8 pad052[0x5E - 0x52];
+    /* 0x5E */ s16 unk05E;
+    /* 0x60 */ s16 syncState;
+} ScaleTask;
+
+typedef struct {
+    /* 0x00 */ u8 pad000[0x14];
+    /* 0x14 */ EffectEntity *partner;
+    /* 0x18 */ u8 pad018[0x26 - 0x18];
+    /* 0x26 */ u16 flags;
+    /* 0x28 */ u8 wait;
+    /* 0x29 */ u8 pc;
+    /* 0x2A */ u8 pad02A[0x48 - 0x2A];
+    /* 0x48 */ CVECTOR color;
+    /* 0x4C */ u8 pad04C[0x64 - 0x4C];
+    /* 0x64 */ s16 syncState;
+} TintTask;
+
+static void func_801A45A4(ScaleTask *task);
+static void func_801A461C(ScaleTask *task);
+static void func_801A464C(ScaleTask *task);
+static void func_801A426C(ScaleTask *task);
+static void func_801A42B0(ScaleTask *task);
+static void func_801A4B6C(TintTask *task);
+static void func_801A4B9C(TintTask *task);
 
 INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A0000);
 
@@ -115,9 +159,27 @@ INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A3F40);
 
 INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A418C);
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A426C);
+static void func_801A426C(ScaleTask *task) {
+    task->flags |= EFFECT_FLAG_UNK02;
+    task->unk050 -= 512;
+    if (task->unk050 <= 0) {
+        task->unk050 = 0;
+        task->color.r = 0;
+        task->color.g = 0;
+        task->color.b = 0;
+        task->pc++;
+    }
+}
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A42B0);
+static void func_801A42B0(ScaleTask *task) {
+    task->unk050 += 768;
+    if (task->unk050 >= ONE) {
+        task->unk050 = ONE;
+        task->flags &= ~EFFECT_FLAG_UNK02;
+        task->flags |= EFFECT_FLAG_STOP | EFFECT_FLAG_DONE;
+        task->pc++;
+    }
+}
 
 void func_801A42FC(void) {
 }
@@ -137,11 +199,40 @@ INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A453C);
 
 INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A4570);
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A45A4);
+static void func_801A45A4(ScaleTask *task) {
+    task->scale.vy -= 1024;
+    task->scale.vx += 1024;
+    task->scale.vz += 1024;
+    if (task->scale.vy <= ONE) {
+        task->scale.vx = ONE;
+        task->scale.vy = ONE;
+        task->scale.vz = ONE;
+        if (task->unk05E == 0) {
+            task->syncState = TASK_SYNC_SIGNAL;
+        } else {
+            task->partner->unk058 = TASK_SYNC_SIGNAL;
+        }
+        task->pc++;
+    }
+}
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A461C);
+static void func_801A461C(ScaleTask *task) {
+    if (task->partner->unk058 == TASK_SYNC_ACK) {
+        task->syncState = TASK_SYNC_RELEASE;
+        task->pc++;
+    }
+}
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A464C);
+static void func_801A464C(ScaleTask *task) {
+    if (task->syncState == 0) {
+        task->unk050 += 512;
+        if (task->unk050 >= ONE) {
+            task->unk050 = ONE;
+            task->flags |= EFFECT_FLAG_STOP;
+            task->pc++;
+        }
+    }
+}
 
 void func_801A46A4(void) {
 }
@@ -159,9 +250,24 @@ INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A49CC);
 
 INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A4B24);
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A4B6C);
+static void func_801A4B6C(TintTask *task) {
+    if (task->partner->unk058 == TASK_SYNC_ACK) {
+        task->syncState = TASK_SYNC_RELEASE;
+        task->pc++;
+    }
+}
 
-INCLUDE_ASM("asm/ovl/effect_004/nonmatchings/effect_004", func_801A4B9C);
+static void func_801A4B9C(TintTask *task) {
+    if (task->syncState == 0) {
+        task->color.r -= 4;
+        task->color.g -= 4;
+        task->color.b -= 4;
+        if (task->color.r == 0) {
+            task->flags |= EFFECT_FLAG_STOP | EFFECT_FLAG_DONE;
+            task->pc++;
+        }
+    }
+}
 
 void func_801A4BF8(void) {
 }
