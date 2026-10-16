@@ -50,6 +50,8 @@ typedef struct {
     u8 ids[OBJ_SLOT_COUNT]; /* object ids present in this list */
 } WorldObjList;
 
+extern s32 RegisterSceneObject(WorldObjList *objList, SlotEntry *slot, s32 marker, s32 flag, SVECTOR *rot, VECTOR *trans);
+
 extern u8             D_800DCE78[];
 extern s32            D_800C5DAC;
 extern LookupTarget  *D_800DDB00[];

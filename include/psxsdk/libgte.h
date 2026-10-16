@@ -51,6 +51,8 @@ void SetLightMatrix(MATRIX *m);
 void SetColorMatrix(MATRIX *m);
 void SetBackColor(s32 rbk, s32 gbk, s32 bbk);
 void SetFarColor(s32 rfc, s32 gfc, s32 bfc);
+void SetFogNear(s32 a, s32 h);
+void SetFogFar(s32 a, s32 h);
 
 /* --- GTE transform operations --- */
 

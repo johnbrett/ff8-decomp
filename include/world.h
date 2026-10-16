@@ -126,7 +126,7 @@ typedef struct {
 typedef struct {
     /* 0x00 */ VECTOR position;     /**< Slot world position (vx/vy/vz; vy compared to world camera angle). */
     /* 0x10 */ s8 marker;           /**< Scan terminator / type byte. */
-    /* 0x11 */ u8 pad11;
+    /* 0x11 */ u8 unk11;
     /* 0x12 */ s8 lookupIdx;        /**< Index into D_800DDB00 when >= 0. */
     /* 0x13 */ u8 pad13;
     /* 0x14 */ SVECTOR vec;         /**< First 8 bytes of the tail — vy/vz used by func_800BDxxx perturb-and-emit helpers. */
@@ -135,13 +135,30 @@ typedef struct {
 
 /**
  * @brief Lookup target reached via D_800DDB00[SlotEntry.lookupIdx].
- *
- * Only the @c field52 u16 is known so far.
  */
 typedef struct {
-    /* 0x00 */ u8 pad00[0x52];
+    /* 0x00 */ s32 unk00;
+    /* 0x04 */ u8 pad04[4];
+    /* 0x08 */ u32 *unk08;
+    /* 0x0C */ u16 unk0C;
+    /* 0x0E */ u16 unk0E;
+    /* 0x10 */ SVECTOR unk10;
+    /* 0x18 */ SVECTOR unk18;
+    /* 0x20 */ VECTOR unk20;
+    /* 0x30 */ u8 pad30[0x20];
+    /* 0x50 */ u16 unk50;
     /* 0x52 */ u16 field52;
+    /* 0x54 */ u8 pad54[0x0C];
+    /* 0x60 */ u8 flags;
+    /* 0x61 */ u8 pad61[7];
+    /* 0x68 */ u16 *unk68;
+    /* 0x6C */ u32 *unk6C;
+    /* 0x70 */ u8 pad70[0x28];
+    /* 0x98 */ s32 unk98;
 } LookupTarget;
+
+#define LOOKUP_TARGET_FLAG_UNK08 0x08
+#define LOOKUP_TARGET_FLAG_UNK10 0x10
 
 /**
  * @brief 12-byte keyed record used by D_800C9880's packed lookup buffer.
@@ -580,7 +597,6 @@ extern BattleSceneCtx D_800CA040;       /**< Worldmap "no-battle" sentinel — a
 extern s16         D_800C53B8[];        /**< Bone-id table (used by we_object4). */
 extern s32 func_800AF28C(ScriptOp *p);
 extern s32 func_800BEFC4(void);
-extern void RegisterSceneObject(u8 *actor, SlotEntry *slot, s32 marker, s32 flag, SVECTOR *rot, VECTOR *trans);
 
 /**
  * @brief Pair of rotation source vectors at known offsets. Pointed to by

@@ -122,7 +122,44 @@ s32 func_800BD7E4(s32 charIdx) {
     return 0;
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", RegisterSceneObject);
+// Ids below FIRST_OBJ_ID get a render slot; slot->lookupIdx is the count of such ids before it.
+s32 RegisterSceneObject(WorldObjList *objList, SlotEntry *slot, s32 marker, s32 flag, SVECTOR *rot, VECTOR *trans) {
+    s32 i;
+    s32 count;
+
+    if (slot != NULL) {
+        if (trans != NULL) {
+            slot->position = *trans;
+        }
+        if (rot != NULL) {
+            slot->vec = *rot;
+        }
+        slot->marker = marker;
+        if (flag >= 0) {
+            slot->unk11 = flag;
+        }
+    }
+
+    for (count = i = 0; i < OBJ_SLOT_COUNT; i++) {
+        if (objList->ids[i] == OBJ_LIST_END) {
+            objList->ids[i] = marker;
+            if (marker < FIRST_OBJ_ID) {
+                if (slot != NULL) {
+                    slot->lookupIdx = count;
+                }
+                return 1;
+            }
+            if (slot != NULL) {
+                slot->lookupIdx = -1;
+            }
+            return 0;
+        }
+        if (objList->ids[i] < FIRST_OBJ_ID) {
+            count++;
+        }
+    }
+    return -1;
+}
 
 /**
  * @brief Copy 10 flag bytes from D_800780D8 to destination struct.
@@ -421,7 +458,37 @@ void func_800BDDC4(SlotEntry *input) {
     func_800AC0A0(3, &input->position, &buf, 3);
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BDEF4);
+// Declared s32 but returns nothing: the original falls off the end, which keeps v0 live
+// at the epilogue and leaves the branch delay slot empty.
+s32 func_800BDEF4(SlotEntry *input, s32 kind, s32 high) {
+    VECTOR pos;
+    SVECTOR buf;
+    s32 marker;
+    s32 dy;
+    s32 threshold;
+
+    marker = 0xB;
+    if (kind == 0) {
+        marker = 0xA;
+    }
+    dy = input->position.vy - D_800C97F4;
+    dy = (dy > 0) ? 0 : dy;
+    if (high != 0) {
+        dy += 224;
+    } else {
+        dy += 128;
+    }
+    threshold = dy + D_800C4D4C * 2;
+    if (func_8009CC3C() < threshold) {
+        pos = input->position;
+        pos.vy = D_800C97F4;
+        buf = input->vec;
+        buf.vy += (func_8009CC3C() - 0x80) * 16;
+        func_800AC0A0(marker, &pos, &buf, 3);
+        buf = input->vec;
+        buf.vy -= (func_8009CC3C() - 0x80) * 16;
+    }
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE040);
 

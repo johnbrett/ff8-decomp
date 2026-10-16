@@ -1,6 +1,7 @@
 #include "common.h"
 #include "world.h"
 #include "world/we_object6.h"
+#include "world/we_object10.h"
 #include "psxsdk/libc.h"
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800ACC68);
@@ -60,12 +61,12 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object6", func_800AD698);
  *   - @c D_800D2128 entry indexed by the high byte (when high byte >= 0)
  *   - all-zero defaults (when high byte < 0)
  *
- * @param actor Opaque marker buffer with a 0x40-byte slot table at offset 6.
+ * @param actor World object list receiving the emitted slots.
  * @param slot  First @c SlotEntry; advances by one entry per emitted slot.
  * @param ctx   Slot context holding two transform tracks at +0x18 and +0x24.
  * @return 1 if at least one slot was emitted, 0 otherwise.
  */
-s32 func_800ADE24(u8 *actor, SlotEntry *slot, Slot *ctx) {
+s32 func_800ADE24(WorldObjList *actor, SlotEntry *slot, Slot *ctx) {
     SVECTOR rot;
     s32 didWork;
     VECTOR trans;
