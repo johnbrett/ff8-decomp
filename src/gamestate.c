@@ -137,7 +137,7 @@ void func_80037240(void) {
 
 
 /** @brief Returns a pointer to global g_gameState.chocobo. */
-u8 *getChocoboWorldPtr(void) {
+void *getChocoboWorldPtr(void) {
     return &g_gameState.chocobo;
 }
 

@@ -283,18 +283,22 @@ typedef struct {
     /* 0x07 */ u8 move;               /**< Move type (1-6). */
     /* 0x08 */ u32 saveCount;         /**< Chocobo World save count. */
     /* 0x0C */ u16 idRelated;         /**< Unknown ID field. */
-    /* 0x0E */ u8 pad0E[6];           /**< Unknown. */
+    /* 0x0E */ u8 pad0E[2];
+    /* 0x10 */ u16 unk10;
+    /* 0x12 */ u16 unk12;
     /* 0x14 */ u8 itemClassACount;    /**< Class A items found. */
     /* 0x15 */ u8 itemClassBCount;    /**< Class B items found. */
     /* 0x16 */ u8 itemClassCCount;    /**< Class C items found. */
     /* 0x17 */ u8 itemClassDCount;    /**< Class D items found. */
-    /* 0x18 */ u8 pad18[16];          /**< Unknown. */
+    /* 0x18 */ u8 itemPos[8][2];
     /* 0x28 */ u32 associatedSaveId;  /**< Associated main save ID. */
     /* 0x2C */ u8 pad2C;              /**< Unknown. */
     /* 0x2D */ u8 bokoAttack;         /**< Boko attack level (star count bitfield). */
     /* 0x2E */ u8 pad2E;              /**< Unknown. */
     /* 0x2F */ u8 homeWalking;        /**< Home walking distance. */
-    /* 0x30 */ u8 pad30[16];          /**< Unknown. */
+    /* 0x30 */ u8 pad30[2];
+    /* 0x32 */ u16 unk32;
+    /* 0x34 */ u8 pad34[12];
 } ChocoboWorldData; /* 0x40 = 64 bytes */
 
 /* ======================================================================== */
@@ -463,5 +467,7 @@ extern void enableChocoboWorld(void);
 
 /** @brief Resolve a character ID (e.g. party slot) to its global character code. */
 extern s32 func_80037C6C(s32 charId);
+
+void *getChocoboWorldPtr(void);
 
 #endif /* GAMESTATE_H */

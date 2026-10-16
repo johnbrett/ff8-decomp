@@ -216,4 +216,6 @@ extern u16 D_801FACE4;
 extern s32 D_801FACE8;
 extern u16 g_menumain_partyMemberMask;
 
+void func_801F0948(s32);
+
 #endif /* MENUMAIN_H */

@@ -2,6 +2,45 @@
 #include "menu_tint.h"
 #include "menusav.h"
 #include "gamestate.h"
+#include "menu.h"
+#include "menumain.h"
+#include "main.h"
+#include "snd_sfx.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad00[32];
+    /* 0x20 */ s32 unk20;
+    /* 0x24 */ u8 pad24[4];
+    /* 0x28 */ SaveMenuParams *params;
+    /* 0x2C */ u8 pad2C[6];
+    /* 0x32 */ s16 unk32;
+    /* 0x34 */ s16 unk34;
+    /* 0x36 */ s16 unk36;
+    /* 0x38 */ u8 pad38[4];
+    /* 0x3C */ u8 unk3C;
+    /* 0x3D */ u8 unk3D;
+    /* 0x3E */ u8 pad3E[3];
+    /* 0x41 */ u8 unk41;
+    /* 0x42 */ u8 pad42[8];
+    /* 0x4A */ u8 unk4A;
+    /* 0x4B */ u8 pad4B[3];
+    /* 0x4E */ u8 unk4E;
+    /* 0x4F */ u8 unk4F;
+    /* 0x50 */ u8 pad50[6];
+    /* 0x56 */ u8 unk56;
+} SaveMenuState;
+
+extern char D_801EBCE0[];
+extern char D_801EBCEC[];
+extern u8 D_801EBD3C[];
+extern u8 D_801EC08C[];
+extern u8 D_801EC2F4;
+extern u8 D_801EC2F5;
+extern s32 D_801EC2F8;
+void func_801E7BE8(SaveMenuState *, s32);
+s32 func_801EA9AC(SaveMenuState *, s32, s32);
+void func_801EB1AC(s32, u8 *, s32);
+
 
 extern u8 D_801EC294;
 extern u8 D_801EC301;
@@ -10,7 +49,7 @@ extern u8 D_80097424[];
 extern u8 D_801EBD5C[];
 extern u16 D_801EBD24[];
 extern s32 D_801EC2E4;
-extern u16 g_menuDisplayCfg[];
+
 
 /**
  * @brief Compute save slot data address.
@@ -817,11 +856,11 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9CD4); /* 0xB0 */
  * @param src Pointer to source rectangle (4 halfwords: x, y, w, h).
  */
 void func_801E9D84(s32 a0, s32 a1, s32 a2, s32 a3, u16 *src) {
-    g_menuDisplayCfg[0] = src[0] + a2;
-    g_menuDisplayCfg[1] = src[1] + a3;
-    g_menuDisplayCfg[2] = src[2];
-    g_menuDisplayCfg[3] = src[3];
-    func_801E9CD4(a0, a1, (s32)g_menuDisplayCfg, g_menuTint[MENU_TINT_NORMAL], (s32)src);
+    g_menuDisplayCfg.x = src[0] + a2;
+    g_menuDisplayCfg.y = src[1] + a3;
+    g_menuDisplayCfg.w = src[2];
+    g_menuDisplayCfg.h = src[3];
+    func_801E9CD4(a0, a1, &g_menuDisplayCfg, g_menuTint[MENU_TINT_NORMAL], src);
 }
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9DE8); /* 0x128 */
@@ -846,7 +885,42 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA904); /* 0xA8 */
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA9AC); /* 0x37C */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EAD28); /* 0x124 */
+void func_801EAD28(SaveMenuParams *params) {
+    SaveMenuState *state;
+    s32 count;
+    s32 mode;
+
+    state = func_801F179C(func_801E7BE8, func_801EA9AC);
+    func_801F1D2C(0, D_801EBCE0, D_801EBD5C);
+    func_801F1D2C(0, D_801EBCEC, D_801EC08C);
+    D_801EC2F8 = sndPlayBankSfx(D_8005F188, 0, 0x80, 0x7F);
+    func_801F0948(0);
+    D_801EC2F4 = 0;
+    if (state != NULL) {
+        count = 0;
+        while (1) {
+            if (D_801EBD3C[count] == 0xFF) {
+                break;
+            }
+            count++;
+        }
+        state->unk4E = count;
+        state->params = params;
+        mode = params->unk58;
+        state->unk20 = 0;
+        state->unk32 = 0x1000;
+        state->unk34 = 0x1000;
+        state->unk3D = 0;
+        state->unk41 = 0;
+        state->unk4F = 0;
+        state->unk4A = 1;
+        state->unk36 = 0x1000;
+        state->unk56 = 0;
+        state->unk3C = mode;
+        func_801E7BE8(state, mode);
+        D_801EC2F5 = 0xFF;
+    }
+} /* 0x124 */
 
 /** @brief Call sfxInit with all arguments set to zero. */
 void func_801EAE4C(void) {
@@ -1081,7 +1155,47 @@ s32 func_801EB2E4(void) {
     return (buf[7] << 8) + (buf[8] << 4) + buf[9];
 }
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EB334); /* 0xD4 */
+s32 func_801EB334(s32 a0) {
+    u8 buf[16];
+    u8 *digits = buf;
+    s32 hundreds;
+    s32 tens;
+    s32 ones;
+    s32 value;
+    s32 rank;
+
+    func_801EB1AC(a0, digits, 0);
+    tens = digits[6];
+    ones = digits[7];
+    hundreds = digits[5];
+    value = ones + tens * 10 + hundreds * 100;
+    rank = 6;
+    if (ones == 7) {
+        rank = 5;
+        if (tens == ones) {
+            rank = 4;
+        }
+    }
+    if (ones + tens == 0) {
+        rank = 3;
+    }
+    if (ones == tens && hundreds == tens) {
+        rank = 2;
+    }
+    if (value == 0) {
+        rank = 1;
+    }
+    if (value == 777) {
+        rank = 1;
+    }
+    if (value == 8) {
+        rank = 1;
+    }
+    if (value == 211) {
+        rank = 0;
+    }
+    return rank;
+} /* 0xD4 */
 
 /**
  * @brief Look up save icon display value from table.
@@ -1160,9 +1274,47 @@ s32 func_801EB5F0(s32 key1, s32 key2, s32 count, u8 *table) {
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EB630); /* 0x84 */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EB6B4); /* 0xB4 */
+void func_801EB6B4(void) {
+    ChocoboWorldData *chocobo = getChocoboWorldPtr();
+    s32 i;
+    u32 x;
+    u32 y;
+    s32 avoidX = chocobo->unk10;
+    s32 avoidY = chocobo->unk12;
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EB768); /* 0xE8 */
+    for (i = 0; i < 8; i++) {
+        do {
+            x = func_801EB578(avoidX, avoidY);
+            y = x >> 8;
+            x &= 0xFF;
+        } while (!func_801EB5F0(x, y, i, chocobo->itemPos[0]));
+        chocobo->itemPos[i][0] = x;
+        chocobo->itemPos[i][1] = y;
+    }
+} /* 0xB4 */
+
+void func_801EB768(void) {
+    ChocoboWorldData *chocobo = getChocoboWorldPtr();
+    s32 i;
+    u32 x;
+    u32 y;
+    s32 avoidX = chocobo->unk10;
+    s32 avoidY = chocobo->unk12;
+    s32 tileX = avoidX >> 10;
+    s32 tileY = avoidY >> 10;
+
+    for (i = 0; i < 8; i++) {
+        if (tileX == chocobo->itemPos[i][0] && tileY == chocobo->itemPos[i][1]) {
+            do {
+                x = func_801EB578(avoidX, avoidY);
+                y = x >> 8;
+                x &= 0xFF;
+            } while (!func_801EB5F0(x, y, i, chocobo->itemPos[0]));
+            chocobo->itemPos[i][0] = x;
+            chocobo->itemPos[i][1] = y;
+        }
+    }
+} /* 0xE8 */
 
 /**
  * @brief Update save data byte at offset 3 based on bytes at offsets 1 and 6.
@@ -1184,7 +1336,19 @@ void func_801EB850(void) {
  * and stores at offsets 0x03, 0x10, 0x12, 0x32 in the save data.
  * Finally calls func_801EB850 to update checksum.
  */
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EB890); /* 0x98 */
+void func_801EB890(void) {
+    ChocoboWorldData *chocobo = getChocoboWorldPtr();
+
+    chocobo->maxHp = func_801EB408(chocobo->level, chocobo->rank);
+    chocobo->unk10 = (u32)((func_801EB0B8() & 0xFF) * 9) >> 7;
+    chocobo->unk12 = (u32)((func_801EB0B8() & 0xFF) * 9) >> 7;
+    chocobo->unk10 <<= 10;
+    chocobo->unk12 <<= 10;
+    chocobo->unk10 += 0x200;
+    chocobo->unk12 += 0x200;
+    chocobo->unk32 = 0;
+    func_801EB850();
+} /* 0x98 */
 
 /**
  * @brief Initialize save data structure with default values.
