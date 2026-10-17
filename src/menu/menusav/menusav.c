@@ -2,6 +2,50 @@
 #include "menu_tint.h"
 #include "menusav.h"
 #include "gamestate.h"
+#include "menu.h"
+#include "menumain.h"
+#include "numstr.h"
+#include "cdrom.h"
+#include "overlay.h"
+#include "psxsdk/libetc.h"
+
+#define SLOTS_PER_PAGE 3
+#define SAVE_SLOT_COUNT 15
+#define HEX_DIGITS 8
+
+typedef struct {
+    /* 0x00 */ u8 pad00[44];
+    /* 0x2C */ u8 unk2C[2];
+    /* 0x2E */ u8 slotStatus[2];
+    /* 0x30 */ u16 slotPanelWidth;
+    /* 0x32 */ u8 pad32[2];
+    /* 0x34 */ u16 unk34;
+    /* 0x36 */ u8 pad36[2];
+    /* 0x38 */ u16 messageWidth;
+    /* 0x3A */ u8 pad3A[8];
+    /* 0x42 */ s16 pageSlide;
+    /* 0x44 */ u8 pad44[2];
+    /* 0x46 */ s16 unk46;
+    /* 0x48 */ u8 unk48;
+    /* 0x49 */ u8 unk49;
+    /* 0x4A */ u8 cursor;
+    /* 0x4B */ u8 unk4B;
+    /* 0x4C */ u8 pad4C[9];
+    /* 0x55 */ u8 unk55;
+    /* 0x56 */ u8 pad56[6];
+    /* 0x5C */ u16 unk5C;
+} SaveMenuCtx;
+
+extern u8 D_801EBD38[];
+extern u8 D_801EC2A0;
+void func_801E3098(SaveMenuCtx *);
+s32 func_801E6BE0(SaveMenuCtx *, s32, s32);
+void func_801E700C(s32, SaveMenuCtx *);
+s32 func_801E6204(SaveMenuCtx *, s32, s32, s32, s32, s32);
+s32 func_801E9ADC(s32, s32, void *, s32, u16 *);
+s32 func_801E9BC4(s32, s32, void *, s32, u16 *);
+void func_801EB1AC(s32, u8 *, s32);
+u8 *getChocoboWorldPtr(void);
 
 extern u8 D_801EC294;
 extern u8 D_801EC301;
@@ -10,7 +54,6 @@ extern u8 D_80097424[];
 extern u8 D_801EBD5C[];
 extern u16 D_801EBD24[];
 extern s32 D_801EC2E4;
-extern u16 g_menuDisplayCfg[];
 
 /**
  * @brief Compute save slot data address.
@@ -130,7 +173,7 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E2958); /* 0x158 */
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E2AB0); /* 0x1E0 */
 
 /** @brief Draw inner panel with section id 0x5 and clear flag. */
-s32 func_801E2C90(s32 a0) {
+u8 *func_801E2C90(s32 a0) {
     return func_801F08D4(1, 5, a0, 0);
 }
 
@@ -259,7 +302,27 @@ s32 func_801E2ECC(u8 *a0, s32 a1) {
     }
 }
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E2F6C); /* 0x12C */
+void func_801E2F6C(void) {
+    s32 member;
+    s32 i;
+
+    copyString(g_gameState.squallName, func_801E2C90(0x2B));
+    copyString(g_gameState.rinoaName, func_801E2C90(0x2C));
+    copyString(g_gameState.angeloName, func_801E2C90(0x2D));
+    copyString(g_gameState.bokoName, func_801E2C90(0x2E));
+    copyString(g_gameState.mainData.party.grieverName, func_801E2C90(0x2F));
+    for (i = 0; i < 3; i++) {
+        member = g_gameState.mainData.party.partyMembers[i];
+        if (member != 0xFF && !(g_gameState.chars[member].exists & CHAR_FLAG_PRESENT)) {
+            g_gameState.mainData.party.partyMembers[i] = 0xFF;
+        }
+        member = g_gameState.battleParty[i];
+        if (member != 0xFF && !(g_gameState.chars[member].exists & CHAR_FLAG_PRESENT)) {
+            g_gameState.battleParty[i] = 0xFF;
+        }
+    }
+    g_gameState.unk002 = 0x8FF;
+}
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E3098); /* 0x23CC */
 
@@ -267,11 +330,70 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E5464); /* 0xAC */
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E5510); /* 0xB4 */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E55C4); /* 0xC4 */
+s32 func_801E55C4(SaveMenuCtx *ctx, s32 ot, s32 pkt, s32 x, s32 y, s32 message) {
+    x -= 4;
+    y -= 8;
+    pkt = func_801F0FEC(ot, pkt, x + 7, y + 6, func_801E2C90(message + 2), 7);
+    g_menuDisplayCfg.iconType = 0;
+    g_menuDisplayCfg.iconSubType = 0;
+    g_menuDisplayCfg.x = x;
+    g_menuDisplayCfg.y = y;
+    g_menuDisplayCfg.w = ctx->messageWidth;
+    g_menuDisplayCfg.h = 21;
+    return func_801EF9AC(ot, pkt, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E5688); /* 0x114 */
+s32 func_801E5688(SaveMenuCtx *ctx, s32 ot, s32 pkt, s32 x, s32 y, s32 slot) {
+    MenuDisplayConfig *cfg;
+    s32 color;
+    s32 tx;
+    s32 ty;
+    pkt = func_801E55C4(ctx, ot, pkt, x, y, slot & 1);
+    cfg = &g_menuDisplayCfg;
+    if (ctx->slotStatus[slot] < 2) {
+        color = 7;
+    } else {
+        color = 1;
+    }
+    tx = x + 7;
+    ty = y + 16;
+    pkt = func_801F0FEC(ot, pkt, tx, ty, func_801E2C90(0x1F), color);
+    cfg->iconType = 0;
+    cfg->iconSubType = 0;
+    cfg->x = x;
+    cfg->y = y;
+    cfg->w = ctx->slotPanelWidth;
+    cfg->h = 34;
+    return func_801EF9AC(ot, pkt, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E579C); /* 0x124 */
+s32 func_801E579C(SaveMenuCtx *menu, s32 ot, s32 arg2, s32 x, s32 y, s32 slot) {
+    MenuDisplayConfig *cfg;
+    s32 head;
+    s32 color;
+    s32 textX;
+    s32 textY;
+
+    head = func_801E55C4(menu, ot, arg2, x, y, slot & 1);
+    cfg = &g_menuDisplayCfg;
+    color = 1;
+    if (menu->slotStatus[slot] < 2) {
+        color = 7;
+    }
+    if (menu->unk2C[slot] == 0) {
+        color = 0;
+    }
+    textX = x + 7;
+    textY = y + 16;
+    head = func_801F0FEC(ot, head, textX, textY, func_801E2C90(0x20), color);
+    cfg->iconType = 0;
+    cfg->iconSubType = 0;
+    cfg->x = x;
+    cfg->y = y;
+    cfg->w = menu->unk34;
+    cfg->h = 34;
+    return func_801EF9AC(ot, head, 0x1000, g_menuTint[MENU_TINT_NORMAL]);
+}
 
 /**
  * @brief Render save menu entry with string ID 0x26 (save slot label).
@@ -450,9 +572,70 @@ void func_801E61C0(s32 a0, s32 a1, s32 a2, s32 a3) {
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E6204); /* 0x338 */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E653C); /* 0x218 */
+s32 DrawSaveSlotPage(SaveMenuCtx *ctx, s32 ot, s32 packet) {
+    MenuDisplayConfig *cfg = &g_menuDisplayCfg;
+    s32 x = 24;
+    s32 y = 56;
+    s32 first = (u8)(ctx->cursor / SLOTS_PER_PAGE) * SLOTS_PER_PAGE;
+    s32 other;
+    s32 offset;
+    s32 i;
+    s32 slide = ctx->pageSlide;
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E6754); /* 0xB0 */
+    if (slide != 0) {
+        offset = D_801FA3C8[(slide < 0 ? -slide : slide) / 64];
+        if (slide < 0) {
+            offset = -offset;
+            other = first + SLOTS_PER_PAGE;
+            other %= SAVE_SLOT_COUNT;
+        } else {
+            other = first - SLOTS_PER_PAGE;
+            if (other < 0) {
+                other = first + SAVE_SLOT_COUNT - SLOTS_PER_PAGE;
+            }
+        }
+        offset = offset * 384 / 4096;
+        x += offset;
+        if (slide > 0) {
+            x -= 384;
+        } else {
+            x += 384;
+        }
+        for (i = 0; i < SLOTS_PER_PAGE; i++) {
+            packet = func_801E6204(ctx, ot, packet, x, y, i + other);
+            y += 53;
+        }
+        x = offset + 24;
+        y = 56;
+    }
+    for (i = 0; i < SLOTS_PER_PAGE; i++) {
+        packet = func_801E6204(ctx, ot, packet, x, y, i + first);
+        y += 53;
+    }
+    if (D_801EC2A0 != 4) {
+        cfg->iconType = 0;
+        cfg->iconSubType = 0;
+        cfg->x = 16;
+        cfg->y = 56;
+        cfg->w = 352;
+        cfg->h = 79;
+        packet = func_801F5F60(ot, packet, g_menuTint[MENU_TINT_NORMAL], 3);
+    }
+    return packet;
+}
+
+s32 func_801E6754(SaveMenuCtx *ctx, s32 ot, s32 pkt) {
+    s32 color = 7;
+    s32 x = ctx->unk5C;
+    u8 *text;
+
+    pkt = func_801F0FEC(ot, pkt, x, 163, func_801E2C90(0x14), color);
+    text = func_801E2C90(0x15);
+    if (ctx->unk4B == 0) {
+        color = 1;
+    }
+    return func_801F0FEC(ot, pkt, x, 187, text, color);
+}
 
 /**
  * @brief Render save menu entry with string ID 0x0D.
@@ -486,7 +669,17 @@ void func_801E68BC(s32 a0, s32 a1) {
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E6918); /* 0x168 */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E6A80); /* 0x9C */
+s32 func_801E6A80(s32 ot, s32 pkt, s32 step, s32 slot) {
+    s32 brightness;
+
+    slot *= 53;
+    brightness = 0x1000;
+    if (step < 8) {
+        brightness = step * 512;
+    }
+    pkt = func_801F4168(ot, pkt, func_801E2C90(0x1A), 192, slot + 68, brightness, 87);
+    return pkt;
+}
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E6B1C); /* 0xC4 */
 
@@ -494,9 +687,60 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E6BE0); /* 0x42C */
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E700C); /* 0x184 */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E7190); /* 0xD8 */
+void func_801E7190(s32 arg0) {
+    SaveMenuCtx *ctx = func_801F179C(func_801E3098, func_801E6BE0);
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E7268); /* 0x158 */
+    func_801F1DBC(8);
+    setCdBusyFlag();
+    ctx->unk55 = 0;
+    if (ctx != NULL) {
+        if (func_801EFFB8() != 0x18 && (*getChocoboWorldPtr() & 0x01)) {
+            ctx->unk55 = 1;
+        }
+        func_801E700C(arg0, ctx);
+        ctx->unk49 = 0;
+        ctx->unk48 = 1;
+        func_801E3098(ctx);
+    }
+    if (func_801EFFB8() == 0x18) {
+        ctx->unk46 = 0;
+        func_801F1DB0(0);
+    }
+    D_801EC294 = 0;
+}
+
+void func_801E7268(s32 arg0) {
+    SaveMenuCtx *ctx = func_801F179C(func_801E3098, func_801E6BE0);
+    s32 width;
+
+    g_gameState.config.flags = 0;
+    g_gameState.config.analogVolume = 2;
+    func_801F798C();
+    func_801F7928();
+    func_801F7954();
+    if (func_801EFFB8() == 0x19) {
+        func_801F1D34(D_801EBD38);
+        func_801F1DB0(0);
+    }
+    setCdBusyFlag();
+    loadOverlayWithTimCallback(16, MENU_SUBOVERLAY_ADDR);
+    if (ctx != NULL) {
+        ctx->unk55 = 0;
+        func_801E700C(arg0, ctx);
+        ctx->unk49 = 1;
+        ctx->unk48 = 0;
+        width = getFirstLineWidth(func_801E2C90(0x14));
+        /* the wider line is measured twice, as a MAX() macro would */
+        width = width < getFirstLineWidth(func_801E2C90(0x15)) ? getFirstLineWidth(func_801E2C90(0x15)) : width;
+        ctx->unk5C = (384 - width) / 2;
+        func_801E3098(ctx);
+    }
+    D_801EC294 = 0;
+    if (GetVideoMode() == MODE_PAL) {
+        g_engine.repeatDelays.b.lo = 13;
+        g_engine.repeatDelays.b.hi = 4;
+    }
+}
 
 /** @brief Call memzero16 with g_gameState and 0x13A. */
 void func_801E73C0(void) {
@@ -565,7 +809,7 @@ s32 func_801E74BC(void) {
 }
 
 /** @brief Draw inner panel with section id 0xE and clear flag. */
-s32 func_801E74CC(s32 a0) {
+u8 *func_801E74CC(s32 a0) {
     return func_801F08D4(1, 0xE, a0, 0);
 }
 
@@ -801,7 +1045,14 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9ADC); /* 0xE8 */
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9BC4); /* 0x110 */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9CD4); /* 0xB0 */
+s32 func_801E9CD4(s32 ot, s32 pkt, void *rect, s32 tint, u16 *baseRect) {
+    pkt = func_801E9BC4(ot, pkt, rect, tint, baseRect);
+    pkt = func_801E9ADC(ot, pkt, rect, tint, baseRect);
+    g_menuDisplayCfg.iconType = 0;
+    g_menuDisplayCfg.iconSubType = 0;
+    memcpy(&g_menuDisplayCfg, rect, sizeof(RECT));
+    return func_801EF9AC(ot, pkt, 0x1000, tint);
+}
 
 /**
  * @brief Copy rectangle parameters with offset and dispatch rendering.
@@ -817,14 +1068,40 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9CD4); /* 0xB0 */
  * @param src Pointer to source rectangle (4 halfwords: x, y, w, h).
  */
 void func_801E9D84(s32 a0, s32 a1, s32 a2, s32 a3, u16 *src) {
-    g_menuDisplayCfg[0] = src[0] + a2;
-    g_menuDisplayCfg[1] = src[1] + a3;
-    g_menuDisplayCfg[2] = src[2];
-    g_menuDisplayCfg[3] = src[3];
-    func_801E9CD4(a0, a1, (s32)g_menuDisplayCfg, g_menuTint[MENU_TINT_NORMAL], (s32)src);
+    g_menuDisplayCfg.x = src[0] + a2;
+    g_menuDisplayCfg.y = src[1] + a3;
+    g_menuDisplayCfg.w = src[2];
+    g_menuDisplayCfg.h = src[3];
+    func_801E9CD4(a0, a1, &g_menuDisplayCfg, g_menuTint[MENU_TINT_NORMAL], src);
 }
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9DE8); /* 0x128 */
+s32 func_801E9DE8(s32 ot, s32 pkt, s32 unused, s32 y, s32 intensity) {
+    u32 screenWidth = 384; /* Kept as a local for the match. */
+    u32 x;
+    u32 w;
+    u8 *text;
+    u32 h;
+
+    if (intensity == 0) {
+        return pkt;
+    }
+    pkt = func_801EF8D8(ot, pkt);
+    text = func_801E74CC(3);
+    h = measureMessage(text);
+    w = h & 0xFFFF;
+    h >>= 16;
+    h = (h + 4) / 16 * 13;
+    x = (screenWidth - w) / 2;
+    pkt = func_801F0FEC(ot, pkt, x, y + 9, text, 7);
+    x -= 10;
+    g_menuDisplayCfg.iconType = 0;
+    g_menuDisplayCfg.iconSubType = 0;
+    g_menuDisplayCfg.x = x;
+    g_menuDisplayCfg.y = y;
+    g_menuDisplayCfg.w = w + 20;
+    g_menuDisplayCfg.h = h + 18;
+    return func_801EF9AC(ot, pkt, intensity, g_menuTint[MENU_TINT_NORMAL]);
+}
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801E9F10); /* 0x124 */
 
@@ -832,11 +1109,57 @@ INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA034); /* 0x14C */
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA180); /* 0xF8 */
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA278); /* 0x104 */
+s32 func_801EA278(s32 ot, s32 pkt, s32 x, s32 y, s32 color, u32 high, u32 low) {
+    u8 digits[16];
+    u8 text[32];
+    u8 *str;
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA37C); /* 0xC8 */
+    func_801EB1AC(high, digits, g_numberFormat.digits[0]);
+    digits[8] = 0;
+    if (high >= 16) {
+        str = &digits[6];
+    } else {
+        str = &digits[7];
+    }
+    copyString(text, str);
+    btlStrcat2(text, func_801F6AFC(16));
+    func_801EB1AC(low, digits, g_numberFormat.digits[0]);
+    digits[8] = 0;
+    if (low >= 16) {
+        str = &digits[6];
+    } else {
+        str = &digits[7];
+    }
+    btlStrcat2(text, str);
+    pkt = func_801F0FEC(ot, pkt, x, y, text, color);
+    return pkt;
+}
 
-INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA444); /* 0x9C */
+s32 func_801EA37C(s32 ot, s32 pkt, s32 x, s32 y, s32 color, s32 value) {
+    u8 buf[16];
+    u8 *p;
+
+    intToDecStringShort(value, buf, g_numberFormat.digits[0]);
+    replaceLeadingZeros(buf, 4, g_numberFormat.digits[0], g_numberFormat.unk12);
+    p = buf;
+    if (*p == g_numberFormat.unk12) {
+        do {
+            p++;
+        } while (*p == buf[0]);
+    }
+    pkt = func_801F0FEC(ot, pkt, x, y, p, color);
+    return pkt;
+}
+
+s32 DrawHexNumber(s32 ot, s32 pkt, s32 x, s32 y, s32 color, s32 value, s32 digits) {
+    u8 buf[HEX_DIGITS + 1];
+    u8 *end;
+
+    func_801EB1AC(value, buf, g_numberFormat.digits[0]);
+    end = &buf[HEX_DIGITS];
+    *end = 0;
+    return func_801F0FEC(ot, pkt, x, y, end - digits, color);
+}
 
 INCLUDE_ASM("asm/ovl/menusav/nonmatchings/menusav", func_801EA4E0); /* 0x160 */
 

@@ -380,7 +380,8 @@ typedef struct {
  * use (s32)&g_gameState to prevent CC1PSX symbol+constant folding.
  */
 typedef struct {
-    /* 0x000 */ u8                pad000[4];                   /**< Save header prefix. */
+    /* 0x000 */ u8                pad000[2];
+    /* 0x002 */ u16               unk002;
     /* 0x004 */ u16               unk004;
     /* 0x006 */ u8                pad006[0x018 - 0x006];
     /* 0x018 */ u8                squallName[12];              /**< Squall's name (null-terminated). */

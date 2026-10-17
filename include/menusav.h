@@ -3,8 +3,8 @@
 
 #include "common.h"
 
-extern void func_801E7190(void); /**< Save-point save menu. */
-extern void func_801E7268(void); /**< Title menu: NEW GAME / Continue (screen 0x10). */
+extern void func_801E7190(s32);
+extern void func_801E7268(s32);
 extern void func_801EAD28(void);
 
 #endif /* MENUSAV_H */
