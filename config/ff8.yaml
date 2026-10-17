@@ -2276,6 +2276,7 @@ binaries:
     target_path: original/effect/effect_084.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_084.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_084
     type: code
@@ -2283,7 +2284,10 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_084]
+    - [0x103dc, c, lib/camera_tween]
+    - [0x108f8, c, effect_084_tail]
     - [0x14CD4, .rodata, effect_084]
+    - [0x14D54, .rodata, effect_084_tail]
     - [0x14E68, bin, effect_084]
   - [0x5A090]
 - name: effect_085
@@ -2340,6 +2344,7 @@ binaries:
     target_path: original/effect/effect_088.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_088.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_088
     type: code
@@ -2347,7 +2352,10 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_088]
+    - [0x1119C, c, lib/camera_tween]
+    - [0x116B8, c, effect_088_tail]
     - [0x15F0C, .rodata, effect_088]
+    - [0x15FB0, .rodata, effect_088_tail]
     - [0x1614C, bin, effect_088]
   - [0x5A9D8]
 - name: effect_089

@@ -1,0 +1,3 @@
+UpdateEffectCameraTween = 0x801B119C; // type:func
+EffectCameraHelper = 0x801B0F6C; // type:func
+g_effectCameraTween = 0x801E05F0;
