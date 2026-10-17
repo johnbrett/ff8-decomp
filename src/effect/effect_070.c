@@ -127,11 +127,3 @@ INCLUDE_ASM("asm/ovl/effect_070/nonmatchings/effect_070", func_801A69F8);
 INCLUDE_ASM("asm/ovl/effect_070/nonmatchings/effect_070", func_801A6A68);
 
 INCLUDE_ASM("asm/ovl/effect_070/nonmatchings/effect_070", func_801A6D08);
-
-INCLUDE_ASM("asm/ovl/effect_070/nonmatchings/effect_070", func_801A6F64);
-
-INCLUDE_ASM("asm/ovl/effect_070/nonmatchings/effect_070", func_801A705C);
-
-INCLUDE_ASM("asm/ovl/effect_070/nonmatchings/effect_070", func_801A7DB8);
-
-INCLUDE_ASM("asm/ovl/effect_070/nonmatchings/effect_070", func_801A82A8);

@@ -2053,6 +2053,7 @@ binaries:
     target_path: original/effect/effect_070.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_070.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_070
     type: code
@@ -2060,6 +2061,8 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_070]
+    - [0x6f64, c, lib/camerablend]
+    - [0x705c, c, effect_070_tail]
     - [0x836C, bin, effect_070]
   - [0x51F1C]
 - name: effect_071
@@ -5170,6 +5173,7 @@ binaries:
     target_path: original/effect/effect_278.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_278.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_278
     type: code
@@ -5177,6 +5181,8 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_278]
+    - [0x6a70, c, lib/cameraorbit]
+    - [0x6ba4, c, effect_278_tail]
     - [0x8004, bin, effect_278]
   - [0x4F088]
 - name: effect_279

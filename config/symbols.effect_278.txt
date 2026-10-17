@@ -1,0 +1,1 @@
+OrbitEffectCamera = 0x801A6A70; // type:func
