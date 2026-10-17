@@ -3,6 +3,17 @@
  * @brief Griever Death
  */
 #include "common.h"
+#include "effect.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad00[120];
+    /* 0x78 */ SVECTOR position;
+} GrieverDeathState;
+
+extern GrieverDeathState D_801EA26C;
+extern u8 D_801B37F0[];
+
+void func_801AEC48(BattleEffectSlot *slot, s16 amount, s16 mode);
 
 INCLUDE_ASM("asm/ovl/effect_079/nonmatchings/effect_079", func_801A0000);
 
@@ -556,7 +567,24 @@ INCLUDE_ASM("asm/ovl/effect_079/nonmatchings/effect_079", func_801B20BC);
 
 INCLUDE_ASM("asm/ovl/effect_079/nonmatchings/effect_079", func_801B2124);
 
-INCLUDE_ASM("asm/ovl/effect_079/nonmatchings/effect_079", func_801B21EC);
+void RestoreGrieverDeathPosition(EffectEntity *task) {
+    GrieverDeathState *state = &D_801EA26C;
+    BattleEffectSlot *slot = &D_800EF2D0[task->unk02D];
+
+    slot->pos = state->position;
+    slot->pos.vx += 128;
+    slot->pos.vy -= 32;
+    slot->pos.vz -= 336;
+    slot->flags &= ~BATTLE_SLOT_FLAG_UNK04;
+    slot->flags |= BATTLE_SLOT_FLAG_UNK800;
+    slot->mtx.t[0] = slot->pos.vx;
+    slot->mtx.t[1] = slot->pos.vy;
+    slot->mtx.t[2] = slot->pos.vz;
+    task->unk0AC = ONE;
+    func_801AEC48(slot, ONE, 0);
+    func_800C4764(D_801B37F0, 0, 128);
+    task->pc++;
+}
 
 INCLUDE_ASM("asm/ovl/effect_079/nonmatchings/effect_079", func_801B22E0);
 

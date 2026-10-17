@@ -277,7 +277,9 @@ typedef struct EffectEntity {
     /* 0x7A */ s16 unk07A;
     /* 0x7C */ s16 unk07C;
     /* 0x7E */ s16 unk07E;
-    /* 0x80 */ u8 pad080[0xC4 - 0x80];
+    /* 0x80 */ u8 pad080[0xAC - 0x80];
+    /* 0xAC */ s16 unk0AC;
+    /* 0xAE */ u8 pad0AE[0xC4 - 0xAE];
     /* 0xC4 */ s16 unk0C4;
     /* 0xC6 */ u8 pad0C6[0x100 - 0xC6];
 } EffectEntity; /* >= 0x100 */

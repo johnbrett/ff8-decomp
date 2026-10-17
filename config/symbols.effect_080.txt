@@ -1,0 +1,2 @@
+PositionSlotAboveTarget = 0x801B2B14; // type:func
+InitEffectFacing = 0x801AFF98; // type:func

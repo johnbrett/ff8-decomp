@@ -1,8 +1,24 @@
 /**
- * @file effect_080.c
- * @brief Ultimecia Junctioning to Griever
- */
+    * @file effect_080.c
+    * @brief Ultimecia Junctioning to Griever
+    */
 #include "common.h"
+#include "effect.h"
+
+typedef struct {
+    /* 0x00 */ SVECTOR from;
+    /* 0x08 */ SVECTOR to;
+    /* 0x10 */ u8 pad010[12];
+    /* 0x1C */ BattleEffectSlot *slot;
+    /* 0x20 */ u8 pad020[42];
+    /* 0x4A */ s16 angle;
+    /* 0x4C */ u8 pad04C[8];
+} EffectFacingState;
+
+extern EffectFacingState *D_801B3164;
+void func_801A1EA4(void *, s32);
+
+static void InitEffectFacing(EffectEntity *entity);
 
 INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801A0000);
 
@@ -396,7 +412,19 @@ INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801AFD64);
 
 INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801AFF70);
 
-INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801AFF98);
+static void InitEffectFacing(EffectEntity *entity) {
+    BattleEffectSlot *to = &D_800EF2D0[entity->unk02D];
+    BattleEffectSlot *from = &D_800EF2D0[entity->unk02C];
+    SVECTOR delta;
+
+    func_801A1EA4(D_801B3164, sizeof(EffectFacingState));
+    D_801B3164->slot = to;
+    D_801B3164->to = to->pos;
+    D_801B3164->from = from->pos;
+    delta.vx = D_801B3164->to.vx - D_801B3164->from.vx;
+    delta.vz = D_801B3164->to.vz - D_801B3164->from.vz;
+    D_801B3164->angle = (ratan2(delta.vx, delta.vz) + 2048) & 0xFFF;
+}
 
 INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801B00BC);
 
@@ -536,7 +564,17 @@ INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801B2A40);
 
 INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801B2B00);
 
-INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801B2B14);
+void PositionSlotAboveTarget(EffectEntity *entity) {
+    BattleEffectSlot *target = &D_800EF2D0[entity->unk02D];
+    BattleEffectSlot *slot = &D_800EF2D0[entity->unk02C];
+
+    slot->pos = target->pos;
+    slot->pos.vy -= 1768;
+    slot->mtx.t[0] = slot->pos.vx;
+    slot->mtx.t[1] = slot->pos.vy;
+    slot->mtx.t[2] = slot->pos.vz;
+    entity->pc++;
+}
 
 INCLUDE_ASM("asm/ovl/effect_080/nonmatchings/effect_080", func_801B2BAC);
 

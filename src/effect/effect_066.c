@@ -5,6 +5,23 @@
 #include "common.h"
 #include "effect.h"
 
+typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ s16 frame;
+    /* 0x0E */ s16 unk00E;
+    /* 0x10 */ SVECTOR position;
+    /* 0x18 */ s16 angle;
+    /* 0x1A */ s16 duration;
+    /* 0x1C */ s16 scaleXZ;
+    /* 0x1E */ s16 unk01E;
+    /* 0x20 */ s16 scaleY;
+} GrieverDeathParticle;
+
+extern SVECTOR D_801B45DC;
+extern u8 D_801B45C4[];
+
+s32 func_801A9F5C(GrieverDeathParticle *task);
+
 #define GRIEVER_DETACH_ORDER_RANGE 320
 #define GRIEVER_DETACH_HEIGHT -6000
 
@@ -135,7 +152,21 @@ INCLUDE_ASM("asm/ovl/effect_066/nonmatchings/effect_066", func_801A9AB4);
 
 INCLUDE_ASM("asm/ovl/effect_066/nonmatchings/effect_066", func_801A9F5C);
 
-INCLUDE_ASM("asm/ovl/effect_066/nonmatchings/effect_066", func_801AA0D4);
+void func_801AA0D4(void) {
+    GrieverDeathParticle *task;
+
+    D_801B45DC.vy += 2000;
+    task = func_800B2A84(D_801B45C4, func_801A9F5C);
+    task->frame = 0;
+    task->position.vx = D_801B45DC.vx;
+    task->position.vy = D_801B45DC.vy;
+    task->position.vz = D_801B45DC.vz;
+    task->angle = 0;
+    task->duration = 30;
+    task->scaleXZ = 16384;
+    task->unk01E = 215;
+    task->scaleY = 8192;
+}
 
 INCLUDE_ASM("asm/ovl/effect_066/nonmatchings/effect_066", func_801AA16C);
 

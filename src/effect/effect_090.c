@@ -3,6 +3,37 @@
  * @brief Tonberry Summon (Chef's Knife)
  */
 #include "common.h"
+#include "effect.h"
+#include "psxsdk/libc.h"
+#include "battle/bc_object15.h"
+
+typedef struct {
+    /* 0x00 */ SVECTOR start;
+    /* 0x08 */ SVECTOR end;
+    /* 0x10 */ u8 pad010[58];
+    /* 0x4A */ s16 angle;
+    /* 0x4C */ u8 pad04C[2];
+    /* 0x4E */ s16 unk04E;
+    /* 0x50 */ u8 pad050[4];
+} TonberryApproach;
+
+extern TonberryApproach *D_8019DADC;
+
+void func_80191DA0(void *data, s32 size);
+
+typedef struct {
+    /* 0x00 */ u8 unk00[41];
+    /* 0x29 */ u8 pc;
+    /* 0x2A */ u8 unk2A[34];
+    /* 0x4C */ BattleSpriteAnim *anim;
+    /* 0x50 */ s16 unk50;
+    /* 0x52 */ s16 unk52;
+    /* 0x54 */ s16 unk54;
+    /* 0x56 */ s16 unk56;
+    /* 0x58 */ u8 unk58[20];
+    /* 0x6C */ SVECTOR velocity;
+} KnifeParticle;
+extern BattleSpriteAnim D_8019E0C4;
 
 INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_80190000);
 
@@ -328,7 +359,19 @@ INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_8019AE24);
 
 INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_8019AF38);
 
-INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_8019B0AC);
+static void InitTonberryApproach(EffectEntity *entity) {
+    SVECTOR delta;
+
+    func_80191DA0(D_8019DADC, sizeof(TonberryApproach));
+    func_800B3960(&D_800EF2D0[entity->unk02D], 240, 0, &D_8019DADC->end);
+    D_8019DADC->end.vy = 0;
+    D_8019DADC->start = D_8019DADC->end;
+    D_8019DADC->start.vz += 3072;
+    delta.vx = D_8019DADC->end.vx - D_8019DADC->start.vx;
+    delta.vz = D_8019DADC->end.vz - D_8019DADC->start.vz;
+    D_8019DADC->angle = (ratan2(delta.vx, delta.vz) + 2048) & 0xFFF;
+    D_8019DADC->unk04E = D_800EF2D0[entity->unk02D].unk026;
+}
 
 INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_8019B1D0);
 
@@ -413,7 +456,15 @@ void func_8019BF80(void) {
 
 INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_8019BF88);
 
-INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_8019C038);
+void func_8019C038(KnifeParticle *particle) {
+    particle->anim = &D_8019E0C4;
+    particle->unk56 = 0;
+    particle->unk52 = 9;
+    particle->velocity.vx = rand() % 768 - 384;
+    particle->velocity.vy = -640 - rand() % 768;
+    particle->velocity.vz = rand() % 768 + 640;
+    particle->pc++;
+}
 
 INCLUDE_ASM("asm/ovl/effect_090/nonmatchings/effect_090", func_8019C128);
 

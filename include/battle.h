@@ -866,6 +866,7 @@ typedef struct BattleEffectSlot {
 #define BATTLE_SLOT_FLAG_UNK02 0x2
 #define BATTLE_SLOT_FLAG_UNK04 0x4
 #define BATTLE_SLOT_FLAG_UNK20 0x20
+#define BATTLE_SLOT_FLAG_UNK800 0x800
 
 /**
  * @brief The battle renderer's graphics context.

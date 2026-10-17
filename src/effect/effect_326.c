@@ -3,6 +3,29 @@
  * @brief Zantetsuken Reverse
  */
 #include "common.h"
+#include "battle.h"
+#include "battle/bc_object9.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ s16 unk00C;
+    /* 0x0E */ s16 unk00E;
+    /* 0x10 */ s16 unk010;
+    /* 0x12 */ s16 unk012;
+    /* 0x14 */ s16 unk014;
+    /* 0x16 */ s16 unk016;
+    /* 0x18 */ s16 unk018;
+    /* 0x1A */ s16 unk01A;
+    /* 0x1C */ s16 unk01C;
+    /* 0x1E */ s16 unk01E;
+    /* 0x20 */ s16 unk020;
+    /* 0x22 */ s16 unk022;
+} ZantetsukenReversePart;
+extern u8 D_801A9F3C[];
+s32 func_8019CFC4(void *);
+s32 func_8019D144(void *);
+
+static void SpawnZantetsukenReverseParts(void);
 
 INCLUDE_ASM("asm/ovl/effect_326/nonmatchings/effect_326", func_80190000);
 
@@ -176,7 +199,66 @@ INCLUDE_ASM("asm/ovl/effect_326/nonmatchings/effect_326", func_8019CFC4);
 
 INCLUDE_ASM("asm/ovl/effect_326/nonmatchings/effect_326", func_8019D144);
 
-INCLUDE_ASM("asm/ovl/effect_326/nonmatchings/effect_326", func_8019D298);
+static void SpawnZantetsukenReverseParts(void) {
+    ZantetsukenReversePart *part;
+    part = func_800B2A84(D_801A9F3C, func_8019CFC4);
+    part->unk00C = 0;
+    part->unk00E = 0;
+    part->unk010 = 0;
+    part->unk012 = -12000;
+    part->unk016 = 0;
+    part->unk018 = 0;
+    part->unk014 = -4500;
+    part->unk01C = 12288;
+    part->unk022 = 50;
+    part->unk01E = -33;
+    part->unk020 = -33;
+    part = func_800B2A84(D_801A9F3C, func_8019CFC4);
+    part->unk00C = 0;
+    part->unk00E = 1;
+    part->unk010 = 0;
+    part->unk012 = -12000;
+    part->unk014 = -1100;
+    part->unk016 = 0;
+    part->unk018 = 0;
+    part->unk01C = 12288;
+    part->unk022 = -40;
+    part->unk01E = 33;
+    part->unk020 = 33;
+    part = func_800B2A84(D_801A9F3C, func_8019CFC4);
+    part->unk00C = 0;
+    part->unk00E = 0;
+    part->unk010 = 0;
+    part->unk012 = -12450;
+    part->unk014 = -4500;
+    part->unk016 = 2048;
+    part->unk018 = 0;
+    part->unk01C = 12288;
+    part->unk022 = 50;
+    part->unk01E = -33;
+    part->unk020 = -33;
+    part = func_800B2A84(D_801A9F3C, func_8019CFC4);
+    part->unk00C = 0;
+    part->unk00E = 1;
+    part->unk010 = 0;
+    part->unk012 = -12450;
+    part->unk014 = -1100;
+    part->unk016 = 2048;
+    part->unk018 = 0;
+    part->unk01C = 12288;
+    part->unk022 = -40;
+    part->unk01E = 33;
+    part->unk020 = 33;
+    part = func_800B2A84(D_801A9F3C, func_8019D144);
+    part->unk012 = -12500;
+    part->unk00C = 0;
+    part->unk010 = 0;
+    part->unk014 = -4500;
+    part->unk01E = 288;
+    part->unk01C = 288;
+    part->unk018 = 0;
+    part->unk020 = 18432;
+}
 
 INCLUDE_ASM("asm/ovl/effect_326/nonmatchings/effect_326", func_8019D470);
 
