@@ -2,6 +2,7 @@
 #define MENU_H
 
 #include "common.h"
+#include "character.h"
 #include "menu_tint.h"
 
 /** @brief Load address of the menu sub-overlays and their page data. */
@@ -214,7 +215,8 @@ typedef struct {
  * Array of 8 entries indexed by character ID, located at D_801FABC8.
  */
 typedef struct {
-    /* 0x00 */ u8 pad00[8];        /**< Unknown. */
+    /* 0x00 */ s32 unk00;
+    /* 0x04 */ s32 unk04;
     /* 0x08 */ s16 currentHp;      /**< Cached current HP. */
     /* 0x0A */ s16 unk0A;          /**< Unknown stat value. */
     /* 0x0C */ u8 unk0C;           /**< Unknown byte. */
@@ -237,7 +239,7 @@ s32 func_801F510C(s32);
 s32 func_801F5144(s32);
 s32 func_801F5F30(s32, s32, s32, s32, s32, s32);
 s32 func_801F5F60(s32, s32, s32, s32);
-s32 func_801F65F0(s32, s32, s32, s32, s32, s32);
+s32 func_801F65F0(s32, s32, s32, s32, CharacterData *, CharMenuInfo *);
 s32 func_801F776C(s32, s32);
 s32 func_801F79F8(s32);
 s32 func_801F7BAC(s32);

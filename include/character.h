@@ -209,8 +209,7 @@ typedef struct {
     /* 0x0E */ u8 spd;                 /**< Speed (VTS). */
     /* 0x0F */ u8 lck;                 /**< Luck (CHC). */
     /* 0x10 */ MagicSlot magic[MAGIC_SLOT_COUNT]; /**< Magic inventory (32 spell slots). */
-    /* 0x50 */ u8 commands[3];         /**< Equipped battle commands. */
-    /* 0x53 */ u8 padCommand;          /**< Unused command slot (padding). */
+    /* 0x50 */ u8 commands[4];     /* Equipped battle commands (4th slot unused). */
     /* 0x54 */ u8 abilities[4];        /**< Equipped character abilities. */
     /* 0x58 */ u16 junctedGfs;         /**< Bitfield of junctioned GFs (1 bit per GF). */
     /* 0x5A */ u8 unknown5A;           /**< Unknown (used). */
