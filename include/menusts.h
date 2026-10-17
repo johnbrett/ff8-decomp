@@ -19,10 +19,11 @@
 /* Public typedefs/structs                                                  */
 /* ======================================================================== */
 
-/** @brief Status display table entry (used by func_801E72D8). */
+/* Status display table entry. */
 typedef struct {
-    u16 statusId;     /**< Status text ID (terminator: 0xFF). */
-    u16 padOrType;    /**< Type/position byte. */
+    /* 0x00 */ u16 statusId;
+    /* 0x02 */ u8 x;
+    /* 0x03 */ u8 y;
 } StatusEntry;
 
 /** @brief Status table entry (8-byte stride) used by func_801E582C/48/6C. */

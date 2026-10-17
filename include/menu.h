@@ -207,6 +207,11 @@ typedef struct {
     /* 0x06 */ u8 pad06[2];       /**< Padding. */
 } JunctionSlotDetail; /* 0x08 = 8 bytes */
 
+typedef struct {
+    /* 0x00 */ u8 abilityId;
+    /* 0x01 */ u8 icon;
+} CharMenuAbility;
+
 /**
  * @brief Character display info for menu rendering (stride 32).
  *
@@ -222,13 +227,15 @@ typedef struct {
     /* 0x0E */ u16 statusFlags;    /**< Character status flags (synced from CharacterData). */
     /* 0x10 */ u8 pad10[2];        /**< Unknown. */
     /* 0x12 */ u8 unk12;           /**< Unknown byte. */
-    /* 0x13 */ u8 pad13[13];       /**< Unknown. */
+    /* 0x13 */ u8 pad13[3];
+    /* 0x16 */ CharMenuAbility abilities[4];
+    /* 0x1E */ u8 pad1E[2];
 } CharMenuInfo; /* 0x20 = 32 bytes */
 
 extern CharMenuInfo g_charMenuInfo[];
 
 /* menumain-owned shared symbols (canonical signatures from menumain.c). */
-s32 func_801F6AFC(s32);
+u8 *func_801F6AFC(s32);
 s32 func_801EFBB4(s32, s32, MenuRowCallback);
 u32 func_801F0FEC(s32, s32, s32, s32, u8 *, s32);
 s32 func_801F3FB4(s32);
