@@ -1,5 +1,6 @@
 #include "common.h"
 #include "sound.h"
+#include "snd_note.h"
 #include "snd_bank.h"
 #include "snd_dma.h"
 
@@ -40,7 +41,6 @@ void FadeSequenceVolumeFrom(SoundSequenceFadeRequest *request);
 
 extern s32 D_80074EB8[];
 extern s32 D_80077288[];
-void func_8001A57C(void *source, void *destination, u32 size);
 void func_8001708C(void *bank, s32 mode);
 extern s32 D_80074EB0;
 extern VoicePoolEntry D_80074F20[12];
@@ -193,7 +193,7 @@ void StopSequence(SoundSeqTrack *seq, SoundSeqTrack *tracks, s32 sequenceId) {
     u32 i;
     SoundSeqTrack *track;
     SoundSeqTrack **owners;
-    if (seq->instParams != 0) {
+    if (seq->work.params.instParams != 0) {
         if (sequenceId == 0 || sequenceId == seq->field5E) {
             seq->field18 = -1;
             track = tracks;
@@ -205,7 +205,7 @@ void StopSequence(SoundSeqTrack *seq, SoundSeqTrack *tracks, s32 sequenceId) {
             owners = D_800772F8;
             seq->field5E = 0;
             seq->field14 = 0;
-            seq->voiceIdx = 0;
+            seq->work.params.voiceIdx = 0;
             for (i = 0; i < 24; i++, owners++) {
                 if (*owners == seq) {
                     *owners = 0;
@@ -267,7 +267,7 @@ INCLUDE_ASM("asm/nonmatchings/snd_bank", func_80017AAC);
 INCLUDE_ASM("asm/nonmatchings/snd_bank", func_80017C9C);
 
 void func_80017D14(SoundSeqTrack *seq, SoundSeqTrack *tracks) {
-    s32 value = seq->instParams;
+    s32 value = seq->work.params.instParams;
     s32 mask;
     s32 bit;
 
@@ -360,12 +360,19 @@ void sndConfigureTrackPlayback(s32 *a0) {
 INCLUDE_ASM("asm/nonmatchings/snd_bank", func_80018234);
 
 void SaveAndStartSequence(SoundSequenceRequest *request) {
-    if (g_sndSeqState->instParams != 0) {
+    void *source;
+    void *destination;
+
+    if (g_sndSeqState->work.params.instParams != 0) {
         if (D_80073CA8 == 0 || D_80073CA8->field5E == 0) {
             D_80073CA8 = &D_80073DF0;
             D_80073C34 = D_80075080;
-            func_8001A57C(g_sndSeqState, &D_80073DF0, 112);
-            func_8001A57C(D_80070D60, D_80073C34, 32 * sizeof(SoundSeqTrack));
+            source = g_sndSeqState;
+            destination = &D_80073DF0;
+            CopySoundWords(source, destination, 112);
+            source = D_80070D60;
+            destination = D_80073C34;
+            CopySoundWords(source, destination, 32 * sizeof(SoundSeqTrack));
         }
     }
     func_8001708C(request->bank, -1);

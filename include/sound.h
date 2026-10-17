@@ -15,12 +15,19 @@
 
 #define SND_HANDLE_NONE (-1)
 
+#define SND_REPEAT_LEVELS 4
+
 /**
  * @brief Sound sequence track (D_80070D60, stride 272 bytes).
  *
  * Each track controls one voice/channel of a sound sequence. The array
  * at D_80070D60 holds all active tracks.
  */
+typedef union {
+    /* 0x00 */ s32 value;
+    /* 0x00 */ u8 *cursor;
+} SoundTrackSource;
+
 typedef struct {
     /* 0x00 */ s16 low;
     /* 0x02 */ s16 high;
@@ -35,18 +42,22 @@ typedef union {
     /* 0x00 */ SoundUnsignedHalves unsignedHalves;
 } SoundPackedWord;
 
+typedef struct {
+    /* 0x00 */ s32 instParams;
+    /* 0x04 */ s32 field08; /* Flag accumulator. */
+    /* 0x08 */ u16 field0C;
+    /* 0x0A */ u16 field0E;
+    /* 0x0C */ s32 voiceIdx;
+} SoundTrackWorkParams;
+
 typedef union {
-    /* 0x00 */ s32 value;
-    /* 0x00 */ u8 *cursor;
-} SoundTrackSource;
+    /* 0x00 */ u8 *repeatCursor[4];
+    /* 0x00 */ SoundTrackWorkParams params;
+} SoundTrackWork;
 
 typedef struct {
-    /* 0x00 */ SoundTrackSource field00;       /**< Status/control flags; bit 0x400 selects the alternate SPU transfer address. */
-    /* 0x04 */ s32 instParams;
-    /* 0x08 */ s32 field08;       /**< Flag accumulator (set/cleared via sndTrackSetFlags/ClearFlags). */
-    /* 0x0C */ u16 field0C;
-    /* 0x0E */ u16 field0E;
-    /* 0x10 */ s32 voiceIdx;
+    /* 0x00 */ SoundTrackSource field00; /* Sequence flags or track stream cursor. */
+    /* 0x04 */ SoundTrackWork work;
     /* 0x14 */ s32 field14;
     /* 0x18 */ s32 field18;
     /* 0x1C */ s32 keyOnPending;
@@ -75,9 +86,10 @@ typedef struct {
     /* 0x6A */ u16 pitchModDepth;
     /* 0x6C */ u16 pitchModCounter;
     /* 0x6E */ u16 pad6E;
-    /* 0x70 */ u8 pad70[16];
+    /* 0x70 */ u16 sequenceRepeatCount[4];
+    /* 0x78 */ u16 repeatState[4];
     /* 0x80 */ u16 pitchBend;
-    /* 0x82 */ u8 pad82[2];
+    /* 0x82 */ u16 pitchBendDuration;
     /* 0x84 */ u16 pitchFadeCounter;
     /* 0x86 */ u16 panFade;
     /* 0x88 */ u16 panFadeTarget;
@@ -93,10 +105,19 @@ typedef struct {
     /* 0x9C */ u8 pad9C[14];
     /* 0xAA */ u16 delaySend;
     /* 0xAC */ u16 delaySendTarget;
-    /* 0xAE */ u8 padAE[14];
+    /* 0xAE */ u8 padAE[4];
+    /* 0xB2 */ u16 unkB2;
+    /* 0xB4 */ u16 unkB4;
+    /* 0xB6 */ u16 unkB6;
+    /* 0xB8 */ u16 unkB8;
+    /* 0xBA */ u16 unkBA;
     /* 0xBC */ u16 volumeLfo;
     /* 0xBE */ u16 volumeLfoTarget;
-    /* 0xC0 */ u8 padC0[10];
+    /* 0xC0 */ u16 unkC0;
+    /* 0xC2 */ u8 padC2[2];
+    /* 0xC4 */ u16 unkC4;
+    /* 0xC6 */ u16 unkC6;
+    /* 0xC8 */ u16 unkC8;
     /* 0xCA */ u16 panLfo;
     /* 0xCC */ u16 panLfoTarget;
     /* 0xCE */ u8 padCE[2];
@@ -105,9 +126,11 @@ typedef struct {
     /* 0xD4 */ u16 panEnvSpeed;
     /* 0xD6 */ u16 volumeDelta;
     /* 0xD8 */ u16 volumeAccum;
-    /* 0xDA */ u8 padDA[4];
+    /* 0xDA */ s16 pitchBendDelta;
+    /* 0xDC */ u8 padDC[2];
     /* 0xDE */ u16 expression;
-    /* 0xE0 */ u8 padE0[4];
+    /* 0xE0 */ s16 expressionDelta;
+    /* 0xE2 */ s16 notePitchDelta;
     /* 0xE4 */ u16 detune;
     /* 0xE6 */ u16 detuneTarget;
     /* 0xE8 */ u8 padE8[2];
@@ -233,6 +256,21 @@ typedef struct {
 typedef struct {
     /* 0x00 */ s32 params[3];
     /* 0x0C */ s32 playCount;
+    /* 0x10 */ u8 pad10[32];
+    /* 0x30 */ u8 *unk30;
+    /* 0x34 */ u8 pad34;
+    /* 0x35 */ u8 unk35;
+    /* 0x36 */ u8 pad36[6];
+    /* 0x3C */ u8 *unk3C;
+    /* 0x40 */ u8 pad40[6];
+    /* 0x46 */ u8 actionType;
+    /* 0x47 */ u8 pad47[2];
+    /* 0x49 */ u8 unk49;
+    /* 0x4A */ u8 unk4A;
+    /* 0x4B */ u8 pad4B;
+    /* 0x4C */ u32 unk4C;
+    /* 0x50 */ u8 pad50[152];
+    /* 0xE8 */ u8 unkE8;
 } SndVoice;
 
 /**

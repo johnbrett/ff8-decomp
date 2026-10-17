@@ -251,16 +251,16 @@ static void CollectSequenceVoiceMask(s32 *result, s32 secondaryMask, s32 primary
     s32 available = ~(D_80075028[0] | D_80075028[4] | D_800772A4);
     s32 voices = 0;
     if (D_80073CA8 != 0) {
-        secondary = D_80073CA8->instParams & secondaryMask;
-        if (secondary & D_80073CA8->field08) {
-            func_80016A1C(D_80073C34, &voices, secondary & D_80073CA8->field08, available);
-            secondary &= ~D_80073CA8->field08;
+        secondary = D_80073CA8->work.params.instParams & secondaryMask;
+        if (secondary & D_80073CA8->work.params.field08) {
+            func_80016A1C(D_80073C34, &voices, secondary & D_80073CA8->work.params.field08, available);
+            secondary &= ~D_80073CA8->work.params.field08;
         }
     }
-    primary = g_sndSeqState->instParams & primaryMask;
-    if (primary & g_sndSeqState->field08) {
-        func_80016A1C(D_80070D60, &voices, primary & g_sndSeqState->field08, available);
-        primary &= ~g_sndSeqState->field08;
+    primary = g_sndSeqState->work.params.instParams & primaryMask;
+    if (primary & g_sndSeqState->work.params.field08) {
+        func_80016A1C(D_80070D60, &voices, primary & g_sndSeqState->work.params.field08, available);
+        primary &= ~g_sndSeqState->work.params.field08;
     }
     if (D_80073CA8 != 0 && secondary != 0) {
         func_80016A1C(D_80073C34, &voices, secondary, available);

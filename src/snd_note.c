@@ -1,6 +1,7 @@
 #include "common.h"
 #include "sound.h"
 #include "snd_bank.h"
+#include "snd_note.h"
 
 extern s16 D_8007507A;
 /**
@@ -16,9 +17,59 @@ void sndSetCdVolume(void) {
     *(s16 *)0x1F801DB2 = val;
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_note", func_8001A57C);
+void CopySoundWords(s32 *src, s32 *dst, u32 bytes) {
+    bytes >>= 2;
 
-INCLUDE_ASM("asm/nonmatchings/snd_note", func_8001A5FC);
+    while (bytes >> 2) {
+        s32 word0 = src[0];
+        s32 word1 = src[1];
+        s32 word2 = src[2];
+        s32 word3 = src[3];
+
+        dst[0] = word0;
+        dst[1] = word1;
+        dst[2] = word2;
+        dst[3] = word3;
+        src += 4;
+        dst += 4;
+        bytes -= 4;
+    }
+    while (bytes != 0) {
+        *dst++ = *src++;
+        bytes--;
+    }
+}
+
+void SwapSoundWords(s32 *first, s32 *second, u32 bytes) {
+    s32 first0;
+    s32 second0;
+    s32 first1;
+    s32 second1;
+
+    bytes >>= 2;
+
+    while (bytes >> 1) {
+        first0 = first[0];
+        second0 = second[0];
+        first1 = first[1];
+        second1 = second[1];
+
+        second[0] = first0;
+        second[1] = first1;
+        first[0] = second0;
+        first[1] = second1;
+        first += 2;
+        second += 2;
+        bytes -= 2;
+    }
+    if (bytes != 0) {
+        first0 = first[0];
+        second0 = second[0];
+
+        second[0] = first0;
+        first[0] = second0;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/snd_note", func_8001A674);
 
@@ -38,10 +89,10 @@ void func_8001ACCC(SoundSeqTrack *track, SoundSeqTrack *tracks) {
 
     if (D_80074F10.unk08 != 0) {
         if (--D_80074F10.unk08 == 0) {
-            savedUnk04 = track->instParams;
+            savedUnk04 = track->work.params.instParams;
             track->field5E = 0;
-            track->instParams = 0;
-            track->voiceIdx = 0;
+            track->work.params.instParams = 0;
+            track->work.params.voiceIdx = 0;
             track->field14 = 0;
             track->field18 = savedUnk04;
         } else {

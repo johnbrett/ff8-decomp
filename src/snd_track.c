@@ -3,6 +3,19 @@
 #include "snd_dma.h"
 #include "psxsdk/libspu.h"
 
+void ReadSoundPitchBendFade(SoundSeqTrack *track);
+void ReadSoundExpressionFade(SoundSeqTrack *track);
+void ReadSoundNotePitchFade(SoundSeqTrack *track);
+void func_8001CFFC(SoundSeqTrack *track);
+void func_8001D0D0(SoundSeqTrack *track);
+void func_8001D164(SoundSeqTrack *track);
+void func_8001D8D0(SoundSeqTrack *track);
+void func_8001D93C(SoundSeqTrack *track);
+void func_8001DACC(SoundSeqTrack *track);
+void func_8001DB04(SoundSeqTrack *track);
+void PushSoundRepeat(SoundSeqTrack *track);
+void RestartSoundRepeat(SoundSeqTrack *track);
+
 extern s32 D_80075028[];
 extern s32 D_80077288[];
 extern s32 D_80074EE8[];
@@ -15,6 +28,7 @@ static void AdvanceAltStreamDma(s32 size, s32 irqAddr, void (*callback)(void));
 void func_8001E308(s32 voice, s32 value, s32 start, s32 repeat);
 void func_8003E494(void (*callback)(void));
 void func_8003E3A4(s32 source, s32 size);
+extern s32 D_80052258[];
 
 void sndStreamSetupMono(void);
 void sndStreamCallbackMonoLow(void);
@@ -198,16 +212,25 @@ void sndTrackReadPitchBend(SoundSeqTrack *track) {
     track->pitchBend = val << 8;
 }
 
-/**
- * @brief Reads pitch bend target and fade counter from the stream.
- *
- * Reads a byte for the fade counter (0 becomes 0x100), then reads a
- * second byte as the target pitch bend value. Computes the per-tick
- * delta as (target - current) / counter and stores it.
- *
- * @param a0 Pointer to the track structure.
- */
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001C684);
+void ReadSoundPitchBendFade(SoundSeqTrack *track) {
+    s32 duration = *track->field00.cursor++;
+    u16 base;
+    u8 *stream;
+    s32 delta;
+    s32 target;
+
+    track->pitchBendDuration = duration;
+    if (duration == 0) {
+        track->pitchBendDuration = 256;
+    }
+    stream = track->field00.cursor;
+    target = *stream << 8;
+    base = track->pitchBend & 0x7F00;
+    delta = (target - base) / track->pitchBendDuration;
+    track->field00.cursor = stream + 1;
+    track->pitchBend = base;
+    track->pitchBendDelta = delta;
+}
 
 /**
  * @brief Reads one byte from stream, advances cursor, ORs 3 into flags,
@@ -267,7 +290,26 @@ void sndTrackReadExpression(SoundSeqTrack *track) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001C8DC);
+void ReadSoundExpressionFade(SoundSeqTrack *track) {
+    s32 duration = *track->field00.cursor++;
+    u16 base;
+    u8 *stream;
+    s32 delta;
+    s32 target;
+
+    track->exprFade = duration;
+    if (duration == 0) {
+        track->exprFade = 256;
+    }
+    stream = track->field00.cursor;
+    target = *stream << 8;
+    base = track->expression & 0xFF00;
+    /* The original sign-extends the packed high-byte value before subtraction. */
+    delta = (target - (s16)base) / track->exprFade;
+    track->field00.cursor = stream + 1;
+    track->expression = base;
+    track->expressionDelta = delta;
+}
 
 /**
  * @brief Reads a note byte from the stream and sets pitch/flag fields.
@@ -290,7 +332,25 @@ void sndTrackReadNotePitch(SoundSeqTrack *track) {
     track->notePitch = val;
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001C99C);
+void ReadSoundNotePitchFade(SoundSeqTrack *track) {
+    s32 duration = *track->field00.cursor++;
+    u16 base;
+    u8 *stream;
+    s32 target;
+    s32 delta;
+
+    track->notePitchFade = duration;
+    if (duration == 0) {
+        track->notePitchFade = 256;
+    }
+    stream = track->field00.cursor;
+    target = ((*stream + 64) & 0xFF) << 8;
+    base = track->notePitch & 0xFF00;
+    delta = (target - base) / track->notePitchFade;
+    track->field00.cursor = stream + 1;
+    track->notePitch = base;
+    track->notePitchDelta = delta;
+}
 
 /**
  * @brief Reads one byte from stream, advances cursor, stores byte as
@@ -480,7 +540,32 @@ void sndTrackStopPortamento(SoundSeqTrack *track) {
     track->portamento = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001CFFC);
+void func_8001CFFC(SoundSeqTrack *track) {
+    s32 initial;
+    s32 value;
+    s32 duration;
+
+    track->flags |= 0x2;
+    value = *track->field00.cursor++;
+    if (track->voiceActive != 0) {
+        track->unkB2 = 0;
+        if (value != 0) {
+            track->volumeLfo = (value & 0x7F) << 8;
+        }
+    } else {
+        track->unkB2 = value;
+    }
+    duration = *track->field00.cursor++;
+    track->unkB6 = duration;
+    if (duration == 0) {
+        track->unkB6 = 256;
+    }
+    track->unkBA = *track->field00.cursor++;
+    initial = track->unkB2;
+    track->keyOnPending = D_80052258[track->unkBA];
+    track->unkB8 = 1;
+    track->unkB4 = initial;
+}
 
 /** @brief Reads one byte from stream, advances cursor, masks to 7 bits, shifts left 8, stores to halfword at a0+0xBC.
  *  @param a0 Pointer to stream state.
@@ -492,7 +577,20 @@ void sndTrackReadVolumeLfo(SoundSeqTrack *track) {
     track->volumeLfo = (val & 0x7F) << 8;
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001D0D0);
+void func_8001D0D0(SoundSeqTrack *track) {
+    u8 *stream = track->field00.cursor;
+    s32 duration = *stream++;
+    s32 delta;
+
+    track->field00.cursor = stream;
+    if (duration == 0) {
+        duration = 256;
+    }
+    delta = (((*stream & 0x7F) << 8) - track->volumeLfo) / duration;
+    track->volumeLfoTarget = duration;
+    track->field00.cursor = stream + 1;
+    track->unkC0 = delta;
+}
 
 /** @brief Clears bit 0x2 in a0+0x30, sets bits 0x3 in a0+0xF8, zeroes a0+0xF0. */
 void sndTrackStopVolumeLfo(SoundSeqTrack *track) {
@@ -501,7 +599,19 @@ void sndTrackStopVolumeLfo(SoundSeqTrack *track) {
     track->volumeLfoStop = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001D164);
+void func_8001D164(SoundSeqTrack *track) {
+    s32 duration;
+
+    track->flags |= 0x4;
+    duration = *track->field00.cursor++;
+    track->unkC4 = duration;
+    if (duration == 0) {
+        track->unkC4 = 256;
+    }
+    track->unkC8 = *track->field00.cursor++;
+    track->tempoRaw = D_80052258[track->unkC8];
+    track->unkC6 = 1;
+}
 
 /** @brief Reads one byte from stream, advances cursor, shifts left 7, stores to halfword at a0+0xCA.
  *  @param a0 Pointer to stream state.
@@ -810,43 +920,57 @@ void sndTrackNop5(void) {
  *
  * @param a0 Pointer to the track structure.
  */
-/**
- * @brief Advance to the next voice slot in the circular buffer.
- *
- * Increments the slot index (D4, mod 4), saves the current stream pointer
- * to the slot's table entry, clears the slot's counter, and copies the
- * current voice index to the new slot.
- *
- * @param a0 Pointer to the track structure.
- */
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001D7EC);
+void PushSoundRepeat(SoundSeqTrack *track) {
+    track->panEnvSpeed = (track->panEnvSpeed + 1) & (SND_REPEAT_LEVELS - 1);
+    track->work.repeatCursor[track->panEnvSpeed] = track->field00.cursor;
+    track->sequenceRepeatCount[track->panEnvSpeed] = 0;
+    track->repeatState[track->panEnvSpeed] = track->pad6E;
+}
 
 INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001D83C);
 
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001D8D0);
+void func_8001D8D0(SoundSeqTrack *track) {
+    u8 *stream = track->field00.cursor;
+    s32 count = *stream++;
+    s32 displacement;
 
-/**
- * @brief Check loop counter and conditionally branch backward in the voice buffer.
- *
- * Reads a byte as the repeat count (0 becomes 0x100). Increments the
- * counter at slot D4*2+0x70. If counter reaches repeat count, reads a
- * 16-bit signed offset and branches, then decrements the slot index mod 4.
- * Otherwise skips the 2-byte offset field.
- *
- * @param a0 Pointer to the track structure.
- */
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001D93C);
+    track->field00.cursor = stream;
+    if (count == 0) {
+        count = 256;
+    }
+    if (track->sequenceRepeatCount[track->panEnvSpeed] + 1 != count) {
+        track->field00.cursor = stream + 2;
+    } else {
+        /* The two stream bytes encode a signed relative displacement. */
+        displacement = (s16)(stream[0] | (stream[1] << 8));
+        track->field00.cursor = stream + displacement;
+    }
+}
 
-/**
- * @brief Advance to next voice entry: increment counter, update stream ptr and voice.
- *
- * Increments the 16-bit counter at a0 + D4*2 + 0x70, sets the stream
- * pointer (a0[0]) from the table at a0 + D4*4 + 4, and copies the
- * voice index from a0 + D4*2 + 0x78 to a0 + 0x6E.
- *
- * @param a0 Pointer to the track structure.
- */
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001D9B8);
+void func_8001D93C(SoundSeqTrack *track) {
+    u8 *stream = track->field00.cursor;
+    s32 count = *stream++;
+    s32 displacement;
+
+    track->field00.cursor = stream;
+    if (count == 0) {
+        count = 256;
+    }
+    if (track->sequenceRepeatCount[track->panEnvSpeed] + 1 != count) {
+        track->field00.cursor = stream + 2;
+    } else {
+        /* The displacement starts at the operand, not after its two bytes. */
+        displacement = (s16)(stream[0] | (stream[1] << 8));
+        track->field00.cursor = stream + displacement;
+        track->panEnvSpeed = (track->panEnvSpeed - 1) & (SND_REPEAT_LEVELS - 1);
+    }
+}
+
+void RestartSoundRepeat(SoundSeqTrack *track) {
+    track->sequenceRepeatCount[track->panEnvSpeed]++;
+    track->field00.cursor = track->work.repeatCursor[track->panEnvSpeed];
+    track->pad6E = track->repeatState[track->panEnvSpeed];
+}
 
 /** @brief Reads byte from stream, stores to three halfword fields (0x64, 0x62, 0xD6), clears 0xD8.
  *  @param a0 Pointer to stream state.
@@ -921,13 +1045,14 @@ void sndTrackClearOverride(SoundSeqTrack *track) {
  *
  * @param a0 Pointer to the stream state.
  */
-/**
- * @brief Reads two bytes from stream, stores to g_sndSeqState+0x68 and +0x64,
- *        then clears +0x6A and +0x66.
- *
- * @param a0 Pointer to the stream state.
- */
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001DACC);
+void func_8001DACC(SoundSeqTrack *track) {
+    SoundSeqTrack *state = g_sndSeqState;
+
+    state->pad68 = *track->field00.cursor++;
+    state->volumeBase = *track->field00.cursor++;
+    state->pitchModDepth = 0;
+    state->instrument = 0;
+}
 
 /**
  * @brief Reads two bytes from stream and combines into 16-bit value at
@@ -935,13 +1060,12 @@ INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001DACC);
  *
  * @param a0 Pointer to the stream state.
  */
-/**
- * @brief Reads two bytes from stream and combines into 16-bit value at
- *        g_sndSeqState+0x6C (low byte first, high byte shifted left 8).
- *
- * @param a0 Pointer to the stream state.
- */
-INCLUDE_ASM("asm/nonmatchings/snd_track", func_8001DB04);
+void func_8001DB04(SoundSeqTrack *track) {
+    SoundSeqTrack *state = g_sndSeqState;
+
+    state->pitchModCounter = *track->field00.cursor++;
+    state->pitchModCounter |= *track->field00.cursor++ << 8;
+}
 
 /**
  * @brief Reads a byte from stream and sets both hi and lo nibble track parameters.
@@ -1145,7 +1269,7 @@ void sndTrackReadBankAddress(SoundSeqTrack *track) {
  *  @param a1 Bits to set.
  */
 void sndTrackSetBankFlags(s32 a0, s32 a1) {
-    g_sndSeqState->field08 |= a1;
+    g_sndSeqState->work.params.field08 |= a1;
 }
 
 /** @brief ANDs ~a1 into the word at g_sndSeqState+0x8 (clear flags).
@@ -1153,7 +1277,7 @@ void sndTrackSetBankFlags(s32 a0, s32 a1) {
  *  @param a1 Bits to clear.
  */
 void sndTrackClearBankFlags(s32 a0, s32 a1) {
-    g_sndSeqState->field08 &= ~a1;
+    g_sndSeqState->work.params.field08 &= ~a1;
 }
 
 /** @brief Calls func_8001C2C8. */
