@@ -13,6 +13,35 @@ extern s32 D_801DE760;
 
 void func_801A10D8(void *state, void *arg1, void *arg2, void *arg3, BattleEffectSlot *slot, s32 slotIndex);
 
+typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ EffectAnimSet *animSet;
+    /* 0x10 */ u8 pad010[12];
+    /* 0x1C */ SVECTOR pos;
+    /* 0x24 */ u8 pad024[5];
+    /* 0x29 */ u8 pc;
+    /* 0x2A */ u8 pad02A[6];
+    /* 0x30 */ s32 unk030;
+    /* 0x34 */ s32 unk034;
+    /* 0x38 */ s32 unk038;
+    /* 0x3C */ u8 pad03C[4];
+    /* 0x40 */ u8 r;
+    /* 0x41 */ u8 g;
+    /* 0x42 */ u8 b;
+    /* 0x43 */ u8 pad043;
+    /* 0x44 */ s16 unk044;
+    /* 0x46 */ s16 facing;
+    /* 0x48 */ u8 pad048[4];
+    /* 0x4C */ BattleSpriteAnim *anim;
+    /* 0x50 */ s16 unk050;
+    /* 0x52 */ u8 pad052[8];
+    /* 0x5A */ s16 unk05A;
+    /* 0x5C */ s16 unk05C;
+    /* 0x5E */ s16 unk05E;
+} DarkMistTask;
+
+extern BattleSpriteAnim D_801A9FB8;
+
 INCLUDE_ASM("asm/ovl/effect_013/nonmatchings/effect_013", func_801A0000);
 
 INCLUDE_ASM("asm/ovl/effect_013/nonmatchings/effect_013", func_801A0148);
@@ -145,7 +174,28 @@ void func_801A4C0C(void) {
 
 INCLUDE_ASM("asm/ovl/effect_013/nonmatchings/effect_013", func_801A4C14);
 
-INCLUDE_ASM("asm/ovl/effect_013/nonmatchings/effect_013", func_801A4D88);
+static void InitDarkMist(DarkMistTask *task) {
+    BattleEffectSlot *slot;
+    s16 facing;
+
+    slot = &D_800EF2D0[task->animSet->slot];
+    facing = slot->facing;
+    task->unk044 = 256;
+    task->unk05A = 1024;
+    task->unk05E = 704;
+    task->unk05C = 2048;
+    task->unk050 = 0;
+    task->r = 0;
+    task->g = 0;
+    task->b = 0;
+    task->unk030 = 0;
+    task->unk034 = 0;
+    task->unk038 = 0;
+    task->anim = &D_801A9FB8;
+    task->facing = facing;
+    func_800B3960(slot, 240, task->unk05A, &task->pos);
+    task->pc++;
+}
 
 INCLUDE_ASM("asm/ovl/effect_013/nonmatchings/effect_013", func_801A4E44);
 
