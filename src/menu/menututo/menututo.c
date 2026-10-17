@@ -669,7 +669,7 @@ top:
             }
         }
         D_8008514C = 0xD;
-        func_801F010C(0x180);
+        InitMenuDisplay(384);
         func_801F1DBC(0x37);
         ctx->scrollPos = 0x1000;
         func_801F12F0();
@@ -1416,7 +1416,7 @@ void func_801E48C0(TutoState *self) {
         break;
 
     case 9:
-        func_801F010C(0x180);
+        InitMenuDisplay(384);
         *state = 10;
         break;
 
@@ -1524,7 +1524,7 @@ s32 func_801E4CB0(TutoState *state, s32 renderCtx, s32 cursorY) {
  *
  * Registers func_801E48C0 and func_801E4CB0 as callbacks via func_801F179C.
  * If registration succeeds, clears fadeAlpha and pageIndex,
- * calls func_801F010C(0x140) for display setup, then enters via func_801E48C0.
+ * calls InitMenuDisplay(320) for display setup, then enters via func_801E48C0.
  */
 void func_801E4CE4(void) {
     TutoState *ctx = func_801F179C(func_801E48C0, func_801E4CB0);
@@ -1532,7 +1532,7 @@ void func_801E4CE4(void) {
     if (ctx != NULL) {
         ctx->fadeAlpha = 0;
         ctx->pageIndex.hword = 0;
-        func_801F010C(0x140);
+        InitMenuDisplay(320);
         func_801E48C0(ctx);
     }
 }

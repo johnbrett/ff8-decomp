@@ -66,17 +66,12 @@ typedef struct MenuTask {
     u8 pad46[0x32];
 } MenuTask; /* 0x78 bytes */
 
-/**
- * @brief Queued text-glyph draw request (see func_801F0954).
- * @note Field meanings inferred from the render-call chain; @c code is the
- *       character/glyph code and @c color the D_801FAAE0 color/font parameter.
- */
 typedef struct {
-    s16 x;      /**< 0x0: screen X (stored pre-offset by -26). */
-    s16 y;      /**< 0x2: screen Y (stored pre-offset by +3). */
-    u8  code;   /**< 0x4: character/glyph code. */
-    u8  pad05;
-    s16 color;  /**< 0x6: color/font parameter. */
+    /* 0x00 */ s16 x;
+    /* 0x02 */ s16 y;
+    /* 0x04 */ u8 code;
+    /* 0x05 */ u8 pad05;
+    /* 0x06 */ u16 color;
 } TextQueueEntry; /* 0x8 bytes */
 
 /* ======================================================================== */
@@ -86,7 +81,7 @@ typedef struct {
 void func_801EFF64(void);
 DR_AREA *func_801F03E8(P_TAG *, DR_AREA *);
 u8  *func_801F08AC(u8 *, s32);
-s32  func_801F0AC8(s32, s32);
+s32 FlushTextQueue(u32 *, s32);
 s32  func_801F0F20(s32, SPRT *, s32, u32, s32);
 s32  func_801F16AC(s32, s32);
 MenuTask *func_801F1850(MenuTickCallback, MenuDrawCallback);
@@ -108,12 +103,11 @@ void func_801F23D0(s32, s32, u8 *);
 u16  func_801F2370(void);
 void func_801F2458(s32);
 void func_801F798C(void);
-s32  func_801F64A4(s32, s32, s32, s32, s32, s32, s32);
+s32 func_801F64A4(s32, s32, s32, s32, CharacterData *, CharMenuInfo *, s32);
 s32  func_801F3DE4(s32, s32, s32, s32, s32, s32, s32);
 s32  func_801F5E0C(s32, s32, s32, s32, s32, s32, s32);
 s32  func_801F5F60(s32, s32, s32, s32);
 s32  func_801F605C(s32, s32, s32, s32, s32);
-s32  func_801F4A98(s32, s32, s32);
 void func_801F5490(s32);
 s32  func_801F5B54(s32, s32, s32, s32, s32, u16 *, s32);
 s32  func_801F5C84(s32, s32, s32, s32, s32, u16 *, u32);
@@ -180,7 +174,19 @@ extern u8  D_801FA279;
 extern u8  D_801FA27A;
 extern u8  D_801FA27B;
 extern u8  D_801FA27C;
-extern u8  D_801FA280[];
+typedef struct {
+    /* 0x00 */ DISPENV disp;
+    /* 0x14 */ DRAWENV draw;
+    /* 0x70 */ u32 *ot;
+    /* 0x74 */ u32 otEntries[9];
+    /* 0x98 */ s32 unk98;
+    /* 0x9C */ s32 unk9C;
+} MenuDisplayBuffer; /* 0xA0 */
+
+extern MenuDisplayBuffer D_801FA280[2];
+
+void InitMenuDisplay(s32 width);
+
 extern MenuTask *D_801FA450;    /**< Head of the active menu-task list. */
 extern MenuTask D_801FA4D0;     /**< Menu-task list head node. */
 extern MenuTask D_801FA550[10]; /**< Menu-task pool. */
@@ -210,10 +216,18 @@ extern u8  D_801FAB7B;
 extern u8  D_801FAB7C;
 extern u8  D_801FAB88[];
 extern u8  D_801FABC4[4];
-extern u8  D_801FABC8[];
-extern u16 D_801FACE2;
-extern u16 D_801FACE4;
+extern CharMenuInfo D_801FABC8[];
+extern s16 D_801FACE2;
+extern s16 D_801FACE4;
 extern s32 D_801FACE8;
 extern u16 g_menumain_partyMemberMask;
+
+extern u8 D_801F7F90[];
+extern u8 *D_801FACC8;
+extern u8 *D_801FACCC;
+extern u8 *D_801FACD0;
+extern RECT D_801FACD8;
+extern s16 D_801FACE0;
+void *DrawGilAmount(void *, void *, s32, s32, u32);
 
 #endif /* MENUMAIN_H */

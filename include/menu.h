@@ -214,21 +214,29 @@ typedef struct {
  * Array of 8 entries indexed by character ID, located at D_801FABC8.
  */
 typedef struct {
-    /* 0x00 */ u8 pad00[8];        /**< Unknown. */
-    /* 0x08 */ s16 currentHp;      /**< Cached current HP. */
-    /* 0x0A */ s16 unk0A;          /**< Unknown stat value. */
-    /* 0x0C */ u8 unk0C;           /**< Unknown byte. */
-    /* 0x0D */ u8 pad0D;           /**< Padding. */
-    /* 0x0E */ u16 statusFlags;    /**< Character status flags (synced from CharacterData). */
-    /* 0x10 */ u8 pad10[2];        /**< Unknown. */
-    /* 0x12 */ u8 unk12;           /**< Unknown byte. */
-    /* 0x13 */ u8 pad13[13];       /**< Unknown. */
+    /* 0x00 */ u8 abilityId;
+    /* 0x01 */ u8 icon;
+} CharMenuAbility;
+
+typedef struct {
+    /* 0x00 */ u32 exp;
+    /* 0x04 */ s32 expToNextLevel;
+    /* 0x08 */ s16 currentHp;
+    /* 0x0A */ s16 maxHp;
+    /* 0x0C */ u8 level;
+    /* 0x0D */ u8 hpBar;           /* currentHp scaled to 0-48 */
+    /* 0x0E */ u16 statusFlags;
+    /* 0x10 */ u8 charIdx;
+    /* 0x11 */ u8 mag;
+    /* 0x12 */ u8 commands[4];
+    /* 0x16 */ CharMenuAbility abilities[4];
+    /* 0x1E */ u8 pad1E[2];
 } CharMenuInfo; /* 0x20 = 32 bytes */
 
 extern CharMenuInfo g_charMenuInfo[];
 
 /* menumain-owned shared symbols (canonical signatures from menumain.c). */
-s32 func_801F6AFC(s32);
+u8 *func_801F6AFC(s32);
 s32 func_801EFBB4(s32, s32, MenuRowCallback);
 u32 func_801F0FEC(s32, s32, s32, s32, u8 *, s32);
 s32 func_801F3FB4(s32);
