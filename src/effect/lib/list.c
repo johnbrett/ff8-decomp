@@ -5,6 +5,7 @@
 #include "common.h"
 #include "effect.h"
 #include "effect/lib/common.h"
+#include "effect/lib/aim.h"
 #include "effect/lib/pose.h"
 #include "effect/lib/emitteralloc.h"
 #include "effect/lib/draw.h"
@@ -84,6 +85,10 @@ void effectEmitterSetup(EffectEmitter *emitter) {
     EffectPoseStep *step = g_effectDrawList->sources[emitter->unk06A];
     EffectParticle *owner = emitter->owner;
     s32 angle;
+#ifdef EFFECT_EMITTER_AIM_TRAIL
+    SVECTOR up;
+    SVECTOR delta;
+#endif
 
     emitter->kind = step->unk011;
     switch (step->unk01C) {
@@ -100,6 +105,15 @@ void effectEmitterSetup(EffectEmitter *emitter) {
         }
         break;
     case 2:
+#ifdef EFFECT_EMITTER_AIM_TRAIL
+        up.vx = 0;
+        up.vy = ONE;
+        up.vz = 0;
+        delta.vx = (g_effectDrawList->strands[2][emitter->unk06B].vx - g_effectDrawList->trail[4].vx) / 65536;
+        delta.vy = (g_effectDrawList->strands[2][emitter->unk06B].vy - g_effectDrawList->trail[4].vy) / 65536;
+        delta.vz = (g_effectDrawList->strands[2][emitter->unk06B].vz - g_effectDrawList->trail[4].vz) / 65536;
+        effectMatrixAim(&emitter->mtx, &delta, &up);
+#else
         effectMatrixIdentity(&emitter->mtx);
         angle = ratan2(
             g_effectDrawList->strands[0][emitter->unk06B].vx - g_effectDrawList->trail[1].vx,
@@ -107,6 +121,7 @@ void effectEmitterSetup(EffectEmitter *emitter) {
         if (angle != 0) {
             effectMatrixRotY(&emitter->mtx, angle);
         }
+#endif
         break;
     case 3:
         emitter->mtx = owner->orient;

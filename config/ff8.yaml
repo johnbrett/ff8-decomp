@@ -1256,6 +1256,7 @@ binaries:
     target_path: original/effect/effect_030.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_030.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_030
     type: code
@@ -1263,8 +1264,17 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_030]
+    - [0x8028, c, lib/list]
+    - [0x86D4, c, lib/trail]
+    - [0x8848, c, lib/strands]
+    - [0x8D34, c, lib/tables]
+    - [0x9048, c, lib/bankclear]
+    - [0x909C, c, lib/drawscript]
+    - [0x9500, c, effect_030_script]
     - [0xABD4, .rodata, effect_030]
-    - [0xABE8, bin, effect_030]
+    - [0xABE8, pad]
+    - [0xABEC, .rodata, lib/list]
+    - [0xAC18, bin, effect_030]
   - [0x3D5A4]
 - name: effect_031
   sha1: 472090cb605a37f22457bfa550ed81d0bc9530f1
@@ -2068,6 +2078,7 @@ binaries:
     target_path: original/effect/effect_071.bin
     src_path: src/effect
     symbol_addrs_path: [config/symbols.main.txt, config/symbols.battle.txt, config/symbols.effect_071.txt]
+    section_order: [.text, .rodata, .data, .bss]
   segments:
   - name: effect_071
     type: code
@@ -2075,8 +2086,17 @@ binaries:
     vram: 0x801A0000
     subsegments:
     - [0x0, c, effect_071]
+    - [0x8028, c, lib/list]
+    - [0x86D4, c, lib/trail]
+    - [0x8848, c, lib/strands]
+    - [0x8D34, c, lib/tables]
+    - [0x9048, c, lib/bankclear]
+    - [0x909C, c, lib/drawscript]
+    - [0x9500, c, effect_071_script]
     - [0xAE7C, .rodata, effect_071]
-    - [0xAE90, bin, effect_071]
+    - [0xAE90, pad]
+    - [0xAE94, .rodata, lib/list]
+    - [0xAEC0, bin, effect_071]
   - [0x3F418]
 - name: effect_072
   sha1: bafaf0137b5a951c7af4a0eb0e84c16a562490fd
