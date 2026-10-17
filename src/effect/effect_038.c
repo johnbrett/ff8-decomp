@@ -9,6 +9,49 @@
 #include "battle/bc_object11.h"
 #include "battle/bc_object13.h"
 #include "battle/bc_object15.h"
+#include "psxsdk/libgte.h"
+
+typedef struct {
+    /* 0x00 */ SVECTOR vertices[3];
+    /* 0x18 */ SVECTOR center;
+    /* 0x20 */ u8 pad020[8];
+    /* 0x28 */ u8 r;
+    /* 0x29 */ u8 g;
+    /* 0x2A */ u8 b;
+    /* 0x2B */ u8 code;
+    /* 0x2C */ u8 shadeR;
+    /* 0x2D */ u8 shadeG;
+    /* 0x2E */ u8 shadeB;
+    /* 0x2F */ u8 shadeCode;
+    /* 0x30 */ u16 tpage;
+    /* 0x32 */ u16 clut;
+    /* 0x34 */ u16 indices[3];
+    /* 0x3A */ s16 id;
+    /* 0x3C */ u8 pad03C[40];
+    /* 0x64 */ u8 u[5];
+    /* 0x69 */ u8 v[5];
+    /* 0x6E */ u8 active;
+    /* 0x6F */ u8 pad06F;
+} QuakeTriangle;
+
+typedef struct {
+    /* 0x00 */ u16 indices[3];
+    /* 0x06 */ u8 u2;
+    /* 0x07 */ u8 v2;
+    /* 0x08 */ u8 u0;
+    /* 0x09 */ u8 v0;
+    /* 0x0A */ u16 clut;
+    /* 0x0C */ u8 u1;
+    /* 0x0D */ u8 v1;
+    /* 0x0E */ u16 tpage;
+    /* 0x10 */ u8 r;
+    /* 0x11 */ u8 g;
+    /* 0x12 */ u8 b;
+    /* 0x13 */ u8 pad013;
+} QuakeTriangleSource;
+
+extern u16 D_801B1824;
+
 
 #define QUAKE_PRIM_BANK_SIZE 81920
 #define QUAKE_PRIM_AREA_B177C_SIZE 46592
@@ -20,7 +63,7 @@ extern u8 *D_801AB3B4;
 extern u8 *D_801AB3BC;
 extern u8 *D_801AB3C0;
 extern u8 *D_801AB3C4;
-extern u8 *D_801B177C;
+extern QuakeTriangle *D_801B177C;
 extern u8 *D_801B1780;
 extern s32 D_801AB3D4;
 extern s32 D_801AB4A4;
@@ -52,6 +95,7 @@ void func_801A9BA4(EffectEntity *entity);
 void *func_801A0000(EffectAnimSet *animSet) {
     EffectEntity *entity;
     u8 slot;
+    void *triangleArea;
 
     slot = animSet->anims->parts->unk000;
     func_800B2A00(&D_801AB4A4, &D_801AB3D4, 100, 2);
@@ -67,8 +111,9 @@ void *func_801A0000(EffectAnimSet *animSet) {
     D_801AB3B4 += QUAKE_PRIM_BANK_SIZE;
     D_801AB3C0 = D_801AB3B4;
     D_801AB3B4 += QUAKE_PRIM_BANK_SIZE;
-    D_801B177C = D_801AB3B4;
-    D_801B1780 = D_801B177C + QUAKE_PRIM_AREA_B177C_SIZE;
+    triangleArea = D_801AB3B4;
+    D_801B177C = triangleArea;
+    D_801B1780 = D_801AB3B4 + QUAKE_PRIM_AREA_B177C_SIZE;
     D_801AB3C4 = D_801B1780 + QUAKE_PRIM_AREA_B1780_SIZE;
     func_800B2A00(&D_801AB614, &D_801AB4B4, 88, 4);
     func_800B2A00(&D_801AB834, &D_801AB624, 52, 10);
@@ -195,7 +240,51 @@ INCLUDE_ASM("asm/ovl/effect_038/nonmatchings/effect_038", func_801A37F8);
 
 INCLUDE_ASM("asm/ovl/effect_038/nonmatchings/effect_038", func_801A3940);
 
-INCLUDE_ASM("asm/ovl/effect_038/nonmatchings/effect_038", func_801A3C44);
+static void InitQuakeTriangle(s16 index, SVECTOR *vertices, QuakeTriangleSource *source) {
+    QuakeTriangle *triangle = &D_801B177C[index];
+    s32 a;
+    s32 b;
+    s32 c;
+
+    triangle->active = 1;
+    a = source->indices[0] & 0xFFF;
+    b = source->indices[1] & 0xFFF;
+    c = source->indices[2] & 0xFFF;
+    triangle->id = index + 400;
+    triangle->indices[0] = D_801B1824 + a;
+    triangle->indices[1] = D_801B1824 + b;
+    triangle->indices[2] = D_801B1824 + c;
+    triangle->vertices[0].vx = vertices[a].vx;
+    triangle->vertices[0].vy = vertices[a].vy;
+    triangle->vertices[0].vz = vertices[a].vz;
+    triangle->vertices[1].vx = vertices[b].vx;
+    triangle->vertices[1].vy = vertices[b].vy;
+    triangle->vertices[1].vz = vertices[b].vz;
+    triangle->vertices[2].vx = vertices[c].vx;
+    triangle->vertices[2].vy = vertices[c].vy;
+    triangle->vertices[2].vz = vertices[c].vz;
+    triangle->center.vx = (triangle->vertices[0].vx + triangle->vertices[1].vx + triangle->vertices[2].vx) / 3;
+    triangle->center.vy = (triangle->vertices[0].vy + triangle->vertices[1].vy + triangle->vertices[2].vy) / 3;
+    triangle->center.vz = (triangle->vertices[0].vz + triangle->vertices[1].vz + triangle->vertices[2].vz) / 3;
+    triangle->u[0] = source->u0;
+    triangle->v[0] = source->v0;
+    triangle->u[1] = source->u1;
+    triangle->v[1] = source->v1;
+    triangle->u[2] = source->u2;
+    triangle->v[2] = source->v2;
+    triangle->u[3] = (triangle->u[0] + triangle->u[1] + triangle->u[2]) / 3;
+    triangle->v[3] = (triangle->v[0] + triangle->v[1] + triangle->v[2]) / 3;
+    triangle->clut = source->clut;
+    triangle->tpage = source->tpage;
+    triangle->r = source->r;
+    triangle->g = source->g;
+    triangle->b = source->b;
+    triangle->code = 0x24;
+    triangle->shadeR = source->r * 3 / 5;
+    triangle->shadeG = source->g * 3 / 5;
+    triangle->shadeB = source->b * 3 / 5;
+    triangle->shadeCode = 0x2C;
+}
 
 INCLUDE_ASM("asm/ovl/effect_038/nonmatchings/effect_038", func_801A3ECC);
 

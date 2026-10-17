@@ -11,6 +11,21 @@
 #include "psxsdk/libc.h"
 
 typedef struct {
+    /* 0x00 */ u8 pad000[12];
+    /* 0x0C */ s16 age;
+    /* 0x0E */ s16 side;
+    /* 0x10 */ s16 x;
+    /* 0x12 */ s16 y;
+    /* 0x14 */ s16 z;
+    /* 0x16 */ s16 duration;
+    /* 0x18 */ s16 rotation;
+    /* 0x1A */ s16 unk01A;
+    /* 0x1C */ s16 scale;
+    /* 0x1E */ u8 pad01E[2];
+    /* 0x20 */ s16 unk020;
+} DoomtrainPairTask;
+
+typedef struct {
     /* 0x00 */ s32 flags;      /* Bit 0: live. */
     /* 0x04 */ u16 age;
     /* 0x06 */ u16 scale;
@@ -75,6 +90,7 @@ extern SVECTOR D_801A8680;
 extern MATRIX D_801A8688;
 extern s32 D_801A87DC;
 
+s32 func_8019481C(DoomtrainPairTask *task);
 s32 func_8019DC00(DoomtrainTask *task);
 s32 func_8019E1E8(DoomtrainTask *task);
 s32 func_8019B2C0(DoomtrainPuff *puff);
@@ -234,7 +250,32 @@ INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_801946C0);
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_8019481C);
 
-INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_80194B54);
+static void StartDoomtrainPair(void) {
+    DoomtrainPairTask *task;
+
+    task = func_800B2A84(&D_801A8668, func_8019481C);
+    task->age = 0;
+    task->side = 0;
+    task->x = 3200;
+    task->y = 0;
+    task->z = -3200;
+    task->duration = 103;
+    task->rotation = -1024;
+    task->unk01A = 1;
+    task->scale = ONE;
+    task->unk020 = 1;
+    task = func_800B2A84(&D_801A8668, func_8019481C);
+    task->age = 0;
+    task->side = 1;
+    task->x = -3200;
+    task->y = 0;
+    task->z = 3200;
+    task->duration = 103;
+    task->rotation = 1024;
+    task->unk01A = 1;
+    task->scale = ONE;
+    task->unk020 = 0;
+}
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_80194C30);
 
