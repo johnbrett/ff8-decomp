@@ -1,4 +1,6 @@
 #include "common.h"
+#include "psxsdk/inline_c.h"
+#include "psxsdk/libgte.h"
 #include "battle.h"
 #include "psxsdk/libc.h"
 #include "gamestate.h"
@@ -11,6 +13,11 @@
 #include "btl_anim.h"
 #include "world/we_object1.h"
 #include "world/we_object9.h"
+
+#define WORLD_SLOT_OFFSET_COUNT 2
+#define WORLD_SLOT_PARTICLE_A 12
+#define WORLD_SLOT_PARTICLE_B 13
+#define WORLD_SLOT_PARTICLE_FLAG 0x2
 
 
 
@@ -474,7 +481,30 @@ void func_800BE1A8(SlotEntry *input, s32 marker, s32 threshold) {
     func_800AC0A0(marker + 4, &pos, &vec, 3);
 }
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE284);
+void func_800BE284(SlotEntry *slot) {
+    MATRIX matrix;
+    SVECTOR angles;
+    VECTOR position;
+    s32 i;
+
+    angles.vx = slot->vec.vx;
+    angles.vy = slot->vec.vy;
+    angles.vz = -slot->vec.vz;
+    RotMatrix(&angles, &matrix);
+    for (i = 0; i < WORLD_SLOT_OFFSET_COUNT; i++) {
+        gte_SetRotMatrix(&matrix);
+        position = slot->position;
+        position.vy -= 146;
+        gte_SetTransVector(&position);
+        gte_ldv0(&D_800C5D9C[i]);
+        gte_mvmva(1, 0, 0, 0, 0);
+        gte_stlvnl(&position);
+        if (D_800C4D4C != 0) {
+            func_800AC0A0(WORLD_SLOT_PARTICLE_A, &position, &angles, WORLD_SLOT_PARTICLE_FLAG);
+        }
+        func_800AC0A0(WORLD_SLOT_PARTICLE_B, &position, &angles, WORLD_SLOT_PARTICLE_FLAG);
+    }
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object10", func_800BE3D0);
 

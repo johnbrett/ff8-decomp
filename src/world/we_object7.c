@@ -1,10 +1,15 @@
 #include "common.h"
+#include "psxsdk/inline_c.h"
+#include "world/we_object10.h"
 #include "psxsdk/libgte.h"
 #include "world.h"
 #include "world/we_object6.h"
 #include "world/we_object7.h"
 #include "world/we_object3.h"
 #include "world/we_object1.h"
+
+#define WORLD_REGION_POINTS 5
+#define WORLD_REGION_CORNERS 4
 
 /* ActorRecord now lives in world.h (shared across world TUs). */
 
@@ -14,7 +19,45 @@ INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B310C);
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B33D8);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B368C);
+s32 func_800B368C(SVECTOR *points, SlotEntry *slot, s16 radius) {
+    SVECTOR delta;
+    VECTOR squared;
+    SVECTOR angles;
+    SVECTOR projected;
+    MATRIX matrix;
+    s32 radiusSquared;
+    s32 i;
+
+    radiusSquared = radius * radius;
+    for (i = 0; i < WORLD_REGION_POINTS; i++) {
+        delta.vx = points[i].vx - slot->unk1C;
+        delta.vy = points[i].vy - slot->unk1E;
+        delta.vz = points[i].vz - slot->unk20;
+        delta.vy = 0;
+        gte_ldsv(&delta);
+        gte_SQR(0);
+        gte_stlvnl(&squared);
+        if (squared.vx + squared.vz <= radiusSquared) {
+            return 1;
+        }
+    }
+    projected.vx = points[0].vx - slot->unk1C;
+    projected.vy = points[0].vy - slot->unk1E;
+    projected.vz = points[0].vz - slot->unk20;
+    projected.vy = 0;
+    func_800BE578(&projected, &angles);
+    RotMatrix(&angles, &matrix);
+    gte_SetRotMatrix(&matrix);
+    /* Promote the signed halfwords before passing them to the GTE macro. */
+    gte_ldtr((s32)slot->unk1C, 0, (s32)slot->unk20);
+    projected.vx = 0;
+    projected.vy = 0;
+    projected.vz = radius;
+    gte_ldv0(&projected);
+    gte_mvmva(1, 0, 0, 0, 0);
+    gte_stsv(&projected);
+    return IsPointInsideWorldQuad(&points[1], &projected) != 0;
+}
 
 /**
  * @brief Update screen-space projection and chained-target pitch/yaw for
@@ -73,7 +116,29 @@ void func_800B3868(TrackObj *obj) {
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B3AB8);
 
-INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", func_800B3ED0);
+s32 IsPointInsideWorldQuad(SVECTOR *corners, SVECTOR *point) {
+    VECTOR edge;
+    VECTOR relative;
+    VECTOR cross;
+    s32 i;
+
+    relative.vy = 0;
+    edge.vy = 0;
+    for (i = 0; i < WORLD_REGION_CORNERS; i++) {
+        edge.vx = corners[(i + 1) % WORLD_REGION_CORNERS].vx - corners[i].vx;
+        edge.vz = corners[(i + 1) % WORLD_REGION_CORNERS].vz - corners[i].vz;
+        relative.vx = point->vx - corners[i].vx;
+        relative.vz = point->vz - corners[i].vz;
+        gte_ldopv1(&relative);
+        gte_ldopv2(&edge);
+        gte_op0();
+        gte_stlvnl(&cross);
+        if (cross.vy > 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/ovl/world/nonmatchings/we_object7", SaveScenePlacement);
 

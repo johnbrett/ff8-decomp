@@ -128,9 +128,12 @@ typedef struct {
     /* 0x10 */ s8 marker;           /**< Scan terminator / type byte. */
     /* 0x11 */ u8 pad11;
     /* 0x12 */ s8 lookupIdx;        /**< Index into D_800DDB00 when >= 0. */
-    /* 0x13 */ u8 pad13;
+    /* 0x13 */ s8 pad13;
     /* 0x14 */ SVECTOR vec;         /**< First 8 bytes of the tail — vy/vz used by func_800BDxxx perturb-and-emit helpers. */
-    /* 0x1C */ u8 tail[0x0C];       /**< Remaining 12 bytes of the tail. */
+    /* 0x1C */ s16 unk1C;
+    /* 0x1E */ s16 unk1E;
+    /* 0x20 */ s16 unk20;
+    /* 0x22 */ u8 tail[6];
 } SlotEntry; /* 0x28 = 40 bytes */
 
 /**
@@ -173,7 +176,7 @@ extern s32 D_800C4D2C;
 extern s32 D_800C4D40;
 extern s32 D_800C4D44;
 extern s32 D_800C4D58;
-extern s32 D_800C4D70;
+extern CmdDesc *D_800C4D70;
 extern s32 D_800C4D98;
 extern s32 D_800C4DA0;        /* = Entry12.val0 >> 1 (set by collectActiveKeyEntries) */
 extern s32 D_800C4DA4;        /* = Entry12.val1 >> 1 (set by collectActiveKeyEntries) */
@@ -194,10 +197,15 @@ extern s32 D_800C5C24;
 extern s32 D_800C5C28;
 extern s32 D_800C5C2C;
 extern s32 D_800C5C30;
+extern s32 D_800C5C34;
 extern s32 D_800C5C38;
 extern s32 D_800C5C3C;
 extern s32 D_800C5C40;
 extern s32 D_800C5D54;
+extern s32 D_800C5D68;
+extern SVECTOR D_800C5D9C[2];
+extern VECTOR D_800C5C08;
+extern VECTOR D_800DBF48;
 /**
  * @brief Pointer to the dialogue/action table buffer.
  *

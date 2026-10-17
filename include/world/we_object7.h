@@ -51,4 +51,6 @@ extern void func_800B893C(void);
 
 extern void SaveScenePlacement(Slot *slot, s32 mode);
 
+s32 IsPointInsideWorldQuad(SVECTOR *corners, SVECTOR *point);
+
 #endif /* WORLD_WE_OBJECT7_H */
