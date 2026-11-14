@@ -3,6 +3,33 @@
  * @brief Doomtrain Summon (Runaway Train)
  */
 #include "common.h"
+#include "battle.h"
+#include "battle/bc_object9.h"
+#include "psxsdk/libc.h"
+#include "effect/effect_191.h"
+
+typedef struct {
+    /** 0x00 */ u8 pad00[0xC];
+    /** 0x0C */ s16 unk0C;
+} func_8019B604_arg0;
+
+typedef struct {
+    /** 0x00 */ u8 pad00[0xC];
+    /** 0x0C */ s16 unk0C;
+    /** 0x0E */ s16 unk0E;
+    /** 0x10 */ s16 unk10;
+    /** 0x12 */ s16 unk12;
+    /** 0x14 */ s16 unk14;
+    /** 0x16 */ s16 unk16;
+    /** 0x18 */ u8 pad18[0x1C - 0x18];
+    /** 0x1C */ s16 unk1C;
+    /** 0x1E */ s16 unk1E;
+    /** 0x20 */ s16 unk20;
+    /** 0x22 */ s16 unk22;
+} func_8019B2C0_arg0;
+
+s32 func_8019B2C0(func_8019B2C0_arg0 *arg0);
+static s32 func_8019B604(func_8019B604_arg0 *arg0);
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_80190000);
 
@@ -168,7 +195,32 @@ INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_8019B254);
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_8019B2C0);
 
-INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_8019B604);
+static s32 func_8019B604(func_8019B604_arg0 *arg0) {
+    func_8019B2C0_arg0 *puff;
+    s32 count;
+    s32 i;
+
+    if (D_800EEC5C & (BATTLE_STATE_UNK200 | BATTLE_STATE_UNK001)) {
+        return 0;
+    }
+    // Unsigned compare is required to match the generated sltiu.
+    if ((u16)arg0->unk0C < 12 && arg0->unk0C % 3 == 1) {
+        count = rand() % 2 + 1;
+        for (i = 0; i < count; i++) {
+            puff = func_800B2A84(&D_801A8668, func_8019B2C0);
+            puff->unk0C = 0;
+            puff->unk0E = i + rand() % 4;
+            puff->unk10 = rand() % 400 + 1000;
+            puff->unk12 = rand() % 2000 - 1300;
+            puff->unk14 = -6000 - rand() % 3000;
+            puff->unk16 = 12;
+            puff->unk1C = rand() % 3072 + 1152;
+            puff->unk1E = puff->unk1C / 6;
+            puff->unk20 = puff->unk22 = (rand() % 6144 + 1664) / 2;
+        }
+    }
+    return ++arg0->unk0C > 12 ? 2 : 0;
+}
 
 INCLUDE_ASM("asm/ovl/effect_191/nonmatchings/effect_191", func_8019B8AC);
 
